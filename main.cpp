@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sstream>
+#include <iomanip>
 #include "RingBuffer.hpp"
 
 const size_t RING_BUFFER_SIZE = 512 * 1024;
@@ -16,9 +17,14 @@ enum class ProxyMode {
     FRAMED
 };
 
+enum class StreamDirection {
+    UPSTREAM,   // Client -> Server
+    DOWNSTREAM  // Server -> Client
+};
+
 struct DirectionConfig {
     size_t header_size;
-    size_t opcode_size; // size to subtract from length header
+    size_t opcode_size;
     bool is_big_endian_len;
 };
 
@@ -27,8 +33,8 @@ struct ProxyMapping {
     std::string target_host;
     std::string target_port;
     ProxyMode mode;
-    DirectionConfig upstream;   // Client -> Server
-    DirectionConfig downstream; // Server -> Client
+    DirectionConfig upstream;
+    DirectionConfig downstream;
 };
 
 enum class StreamParserState {
@@ -36,8 +42,9 @@ enum class StreamParserState {
     EXPECTING_BODY
 };
 
-void writer_thread(int to_fd, RingBuffer& rb, ProxyMode mode, DirectionConfig config) {
+void writer_thread(int to_fd, RingBuffer& rb, ProxyMode mode, DirectionConfig config, StreamDirection direction) {
     char packet_accumulator[65536];
+    std::string dir_str = (direction == StreamDirection::UPSTREAM) ? "[C->S]" : "[S->C]";
 
     if (mode == ProxyMode::TRANSPARENT) {
         while (true) {
@@ -54,25 +61,33 @@ void writer_thread(int to_fd, RingBuffer& rb, ProxyMode mode, DirectionConfig co
                 size_t n = rb.read_exactly(packet_accumulator, config.header_size);
                 if (n < config.header_size) break;
 
-                // Length parsing
-                if (config.is_big_endian_len) {
-                    expected_body_length = (static_cast<unsigned char>(packet_accumulator[0]) << 8) |
-                                            static_cast<unsigned char>(packet_accumulator[1]);
-                } else {
-                    expected_body_length = static_cast<unsigned char>(packet_accumulator[0]) |
-                                            (static_cast<unsigned char>(packet_accumulator[1]) << 8);
-                }
+                // Length parsing (Big Endian)
+                size_t composite_size = (static_cast<unsigned char>(packet_accumulator[0]) << 8) |
+                                         static_cast<unsigned char>(packet_accumulator[1]);
 
-                // Adjustment (e.g., subtract opcode size)
-                if (expected_body_length >= config.opcode_size) {
-                    expected_body_length -= config.opcode_size;
+                // Adjustment: composite size includes opcode field
+                if (composite_size >= config.opcode_size) {
+                    expected_body_length = composite_size - config.opcode_size;
                 } else {
-                    std::cerr << "Protocol error: length smaller than opcode size" << std::endl;
+                    std::cerr << dir_str << " Protocol error: composite size smaller than opcode size" << std::endl;
                     break;
                 }
 
+                // Opcode extraction (Little Endian)
+                uint32_t opcode = 0;
+                if (config.opcode_size == 4) {
+                    std::memcpy(&opcode, packet_accumulator + 2, 4);
+                } else if (config.opcode_size == 2) {
+                    uint16_t op16;
+                    std::memcpy(&op16, packet_accumulator + 2, 2);
+                    opcode = op16;
+                }
+
+                std::cout << dir_str << " Opcode: 0x" << std::hex << std::setw(config.opcode_size * 2) << std::setfill('0') << opcode
+                          << std::dec << " Payload: " << expected_body_length << " bytes" << std::endl;
+
                 if (expected_body_length > sizeof(packet_accumulator) - config.header_size) {
-                    std::cerr << "Protocol error: packet too large (" << expected_body_length << ")" << std::endl;
+                    std::cerr << dir_str << " Protocol error: payload too large (" << expected_body_length << ")" << std::endl;
                     break;
                 }
 
@@ -96,7 +111,7 @@ void writer_thread(int to_fd, RingBuffer& rb, ProxyMode mode, DirectionConfig co
     shutdown(to_fd, SHUT_WR);
 }
 
-void bridge(int from_fd, int to_fd, RingBuffer& rb, ProxyMode mode, DirectionConfig config) {
+void bridge(int from_fd, int to_fd, RingBuffer& rb, ProxyMode mode, DirectionConfig config, StreamDirection direction) {
     std::thread reader([from_fd, &rb]() {
         char buf[8192];
         while (true) {
@@ -108,7 +123,7 @@ void bridge(int from_fd, int to_fd, RingBuffer& rb, ProxyMode mode, DirectionCon
         shutdown(from_fd, SHUT_RD);
     });
 
-    writer_thread(to_fd, rb, mode, config);
+    writer_thread(to_fd, rb, mode, config, direction);
     reader.join();
 }
 
@@ -141,8 +156,8 @@ void handle_client(int client_fd, ProxyMapping mapping) {
     RingBuffer client_to_target(RING_BUFFER_SIZE);
     RingBuffer target_to_client(RING_BUFFER_SIZE);
 
-    std::thread t1(bridge, client_fd, target_fd, std::ref(client_to_target), mapping.mode, mapping.upstream);
-    std::thread t2(bridge, target_fd, client_fd, std::ref(target_to_client), mapping.mode, mapping.downstream);
+    std::thread t1(bridge, client_fd, target_fd, std::ref(client_to_target), mapping.mode, mapping.upstream, StreamDirection::UPSTREAM);
+    std::thread t2(bridge, target_fd, client_fd, std::ref(target_to_client), mapping.mode, mapping.downstream, StreamDirection::DOWNSTREAM);
 
     t1.join();
     t2.join();
@@ -211,9 +226,9 @@ int main(int argc, char* argv[]) {
             mapping.mode = ProxyMode::FRAMED;
         }
 
-        // Default configurations for WoW-like framing if 'f' is specified
-        mapping.upstream = {6, 4, true};   // Client -> Server: 2-byte BE len, 4-byte opcode
-        mapping.downstream = {4, 2, true}; // Server -> Client: 2-byte BE len, 2-byte opcode
+        // Asymmetric framing configurations
+        mapping.upstream = {6, 4, true};   // Client -> Server: 2-byte BE len, 4-byte LE opcode
+        mapping.downstream = {4, 2, true}; // Server -> Client: 2-byte BE len, 2-byte LE opcode
 
         listeners.emplace_back(start_listener, mapping);
     }

@@ -74,6 +74,32 @@ public:
         return read_count;
     }
 
+    // New method: Read up to max_len bytes, blocking only if empty
+    size_t read_some(char* data, size_t max_len) {
+        size_t spin_count = 0;
+        while (true) {
+            size_t h = head.load(std::memory_order_relaxed);
+            size_t t = tail.load(std::memory_order_acquire);
+
+            size_t occupied = (t >= h) ? (t - h) : (capacity - (h - t));
+
+            if (occupied == 0) {
+                if (closed.load(std::memory_order_acquire)) return 0;
+                adaptive_backoff(spin_count);
+                continue;
+            }
+
+            size_t to_read = std::min(max_len, occupied);
+            size_t to_end = capacity - h;
+            size_t chunk = std::min(to_read, to_end);
+
+            std::copy(buffer.begin() + h, buffer.begin() + h + chunk, data);
+
+            head.store((h + chunk) % capacity, std::memory_order_release);
+            return chunk;
+        }
+    }
+
     size_t peek(char* data, size_t len) const {
         size_t h = head.load(std::memory_order_acquire);
         size_t t = tail.load(std::memory_order_acquire);

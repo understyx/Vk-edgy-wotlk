@@ -10,6 +10,11 @@
 
 const size_t RING_BUFFER_SIZE = 512 * 1024;
 
+enum class StreamParserState {
+    EXPECTING_HEADER,
+    EXPECTING_BODY
+};
+
 void bridge(int from_fd, int to_fd, RingBuffer& rb) {
     std::thread reader([from_fd, &rb]() {
         char buf[8192];
@@ -23,13 +28,48 @@ void bridge(int from_fd, int to_fd, RingBuffer& rb) {
     });
 
     std::thread writer([to_fd, &rb]() {
-        char buf[8192];
+        char packet_accumulator[65536];
+        StreamParserState parser_state = StreamParserState::EXPECTING_HEADER;
+
+        // Example: Generic 4-byte header where first 2 bytes are length (Big Endian)
+        const size_t PROTOCOL_HEADER_SIZE = 4;
+        size_t expected_body_length = 0;
+
         while (true) {
-            size_t n = rb.read(buf, sizeof(buf));
-            if (n == 0) break;
-            ssize_t sent = send(to_fd, buf, n, 0);
-            if (sent <= 0) break;
+            if (parser_state == StreamParserState::EXPECTING_HEADER) {
+                size_t n = rb.read_exactly(packet_accumulator, PROTOCOL_HEADER_SIZE);
+                if (n < PROTOCOL_HEADER_SIZE) break;
+
+                // Example parsing: Length in first 2 bytes
+                expected_body_length = (static_cast<unsigned char>(packet_accumulator[0]) << 8) |
+                                        static_cast<unsigned char>(packet_accumulator[1]);
+
+                // Safety check for buffer size
+                if (expected_body_length > sizeof(packet_accumulator) - PROTOCOL_HEADER_SIZE) {
+                    std::cerr << "Packet too large: " << expected_body_length << std::endl;
+                    break;
+                }
+
+                parser_state = StreamParserState::EXPECTING_BODY;
+            }
+
+            if (parser_state == StreamParserState::EXPECTING_BODY) {
+                if (expected_body_length > 0) {
+                    size_t n = rb.read_exactly(packet_accumulator + PROTOCOL_HEADER_SIZE, expected_body_length);
+                    if (n < expected_body_length) break;
+                }
+
+                // Process the complete frame here if needed
+
+                // Forward the complete frame
+                size_t total_frame_size = PROTOCOL_HEADER_SIZE + expected_body_length;
+                ssize_t sent = send(to_fd, packet_accumulator, total_frame_size, 0);
+                if (sent <= 0) break;
+
+                parser_state = StreamParserState::EXPECTING_HEADER;
+            }
         }
+        rb.close();
         shutdown(to_fd, SHUT_WR);
     });
 

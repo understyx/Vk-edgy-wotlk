@@ -34,7 +34,7 @@ public:
             count += chunk;
             written += chunk;
 
-            not_empty.notify_one();
+            not_empty.notify_all();
         }
 
         return written;
@@ -60,7 +60,54 @@ public:
             count -= chunk;
             read_count += chunk;
 
-            not_full.notify_one();
+            not_full.notify_all();
+        }
+
+        return read_count;
+    }
+
+    // New method: peek into the buffer size
+    size_t size() const {
+        std::lock_guard<std::mutex> lock(mtx);
+        return count;
+    }
+
+    // New method: block until exactly 'len' bytes are available and read them
+    size_t read_exactly(char* data, size_t len) {
+        std::unique_lock<std::mutex> lock(mtx);
+
+        not_empty.wait(lock, [this, len] { return count >= len || closed; });
+
+        if (count < len && closed) {
+            // Read whatever is left if closed?
+            // For protocol framing, if we don't have a full frame and it's closed, it's an error.
+            // But let's follow the standard read behavior of returning what's available.
+            size_t to_read = count;
+            size_t read_count = 0;
+            while (read_count < to_read) {
+                size_t available_to_end = capacity - head;
+                size_t chunk = std::min(to_read - read_count, available_to_end);
+                std::copy(buffer.begin() + head, buffer.begin() + head + chunk, data + read_count);
+                head = (head + chunk) % capacity;
+                count -= chunk;
+                read_count += chunk;
+                not_full.notify_all();
+            }
+            return read_count;
+        }
+
+        size_t read_count = 0;
+        while (read_count < len) {
+            size_t available_to_end = capacity - head;
+            size_t chunk = std::min(len - read_count, available_to_end);
+
+            std::copy(buffer.begin() + head, buffer.begin() + head + chunk, data + read_count);
+
+            head = (head + chunk) % capacity;
+            count -= chunk;
+            read_count += chunk;
+
+            not_full.notify_all();
         }
 
         return read_count;

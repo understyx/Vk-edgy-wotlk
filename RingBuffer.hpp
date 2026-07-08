@@ -2,141 +2,117 @@
 #define RING_BUFFER_HPP
 
 #include <vector>
-#include <mutex>
-#include <condition_variable>
+#include <atomic>
+#include <thread>
 #include <algorithm>
 
 class RingBuffer {
 public:
     explicit RingBuffer(size_t size)
-        : buffer(size), capacity(size), head(0), tail(0), count(0), closed(false) {}
+        : buffer(size + 1), capacity(size + 1), head(0), tail(0), closed(false) {}
 
+    // Writer side (Producer)
     size_t write(const char* data, size_t len) {
-        std::unique_lock<std::mutex> lock(mtx);
         size_t written = 0;
-
         while (written < len) {
-            if (closed) break;
+            if (closed.load(std::memory_order_acquire)) break;
 
-            not_full.wait(lock, [this] { return count < capacity || closed; });
-            if (closed) break;
+            size_t h = head.load(std::memory_order_acquire);
+            size_t t = tail.load(std::memory_order_relaxed);
 
-            size_t available = capacity - count;
+            size_t available = (h > t) ? (h - t - 1) : (capacity - (t - h) - 1);
+
+            if (available == 0) {
+                std::this_thread::yield();
+                continue;
+            }
+
             size_t to_write = std::min(len - written, available);
-
-            // Space to the end of the buffer
-            size_t to_end = capacity - tail;
+            size_t to_end = capacity - t;
             size_t chunk = std::min(to_write, to_end);
 
-            std::copy(data + written, data + written + chunk, buffer.begin() + tail);
+            std::copy(data + written, data + written + chunk, buffer.begin() + t);
 
-            tail = (tail + chunk) % capacity;
-            count += chunk;
+            tail.store((t + chunk) % capacity, std::memory_order_release);
             written += chunk;
-
-            not_empty.notify_all();
         }
-
         return written;
     }
 
-    size_t read(char* data, size_t len) {
-        std::unique_lock<std::mutex> lock(mtx);
-
-        not_empty.wait(lock, [this] { return count > 0 || closed; });
-
-        if (count == 0 && closed) return 0;
-
-        size_t to_read = std::min(len, count);
-        size_t read_count = 0;
-
-        while (read_count < to_read) {
-            size_t available_to_end = capacity - head;
-            size_t chunk = std::min(to_read - read_count, available_to_end);
-
-            std::copy(buffer.begin() + head, buffer.begin() + head + chunk, data + read_count);
-
-            head = (head + chunk) % capacity;
-            count -= chunk;
-            read_count += chunk;
-
-            not_full.notify_all();
-        }
-
-        return read_count;
-    }
-
-    // New method: peek into the buffer size
-    size_t size() const {
-        std::lock_guard<std::mutex> lock(mtx);
-        return count;
-    }
-
-    // New method: block until exactly 'len' bytes are available and read them
+    // Reader side (Consumer)
     size_t read_exactly(char* data, size_t len) {
-        std::unique_lock<std::mutex> lock(mtx);
-
-        not_empty.wait(lock, [this, len] { return count >= len || closed; });
-
-        if (count < len && closed) {
-            // Read whatever is left if closed?
-            // For protocol framing, if we don't have a full frame and it's closed, it's an error.
-            // But let's follow the standard read behavior of returning what's available.
-            size_t to_read = count;
-            size_t read_count = 0;
-            while (read_count < to_read) {
-                size_t available_to_end = capacity - head;
-                size_t chunk = std::min(to_read - read_count, available_to_end);
-                std::copy(buffer.begin() + head, buffer.begin() + head + chunk, data + read_count);
-                head = (head + chunk) % capacity;
-                count -= chunk;
-                read_count += chunk;
-                not_full.notify_all();
-            }
-            return read_count;
-        }
-
         size_t read_count = 0;
         while (read_count < len) {
-            size_t available_to_end = capacity - head;
-            size_t chunk = std::min(len - read_count, available_to_end);
+            size_t h = head.load(std::memory_order_relaxed);
+            size_t t = tail.load(std::memory_order_acquire);
 
-            std::copy(buffer.begin() + head, buffer.begin() + head + chunk, data + read_count);
+            size_t occupied = (t >= h) ? (t - h) : (capacity - (h - t));
 
-            head = (head + chunk) % capacity;
-            count -= chunk;
+            if (occupied == 0) {
+                if (closed.load(std::memory_order_acquire)) break;
+                std::this_thread::yield();
+                continue;
+            }
+
+            // Wait for the full amount requested unless the buffer is closed
+            if (occupied < (len - read_count) && !closed.load(std::memory_order_acquire)) {
+                std::this_thread::yield();
+                continue;
+            }
+
+            size_t to_read = std::min(len - read_count, occupied);
+            size_t to_end = capacity - h;
+            size_t chunk = std::min(to_read, to_end);
+
+            std::copy(buffer.begin() + h, buffer.begin() + h + chunk, data + read_count);
+
+            head.store((h + chunk) % capacity, std::memory_order_release);
             read_count += chunk;
-
-            not_full.notify_all();
         }
-
         return read_count;
+    }
+
+    // Allows checking data without consuming it
+    size_t peek(char* data, size_t len) const {
+        size_t h = head.load(std::memory_order_acquire);
+        size_t t = tail.load(std::memory_order_acquire);
+
+        size_t occupied = (t >= h) ? (t - h) : (capacity - (h - t));
+        size_t to_read = std::min(len, occupied);
+        size_t read_count = 0;
+        size_t current_h = h;
+
+        while (read_count < to_read) {
+            size_t to_end = capacity - current_h;
+            size_t chunk = std::min(to_read - read_count, to_end);
+            std::copy(buffer.begin() + current_h, buffer.begin() + current_h + chunk, data + read_count);
+            current_h = (current_h + chunk) % capacity;
+            read_count += chunk;
+        }
+        return read_count;
+    }
+
+    size_t size() const {
+        size_t h = head.load(std::memory_order_acquire);
+        size_t t = tail.load(std::memory_order_acquire);
+        if (t >= h) return t - h;
+        return capacity - (h - t);
     }
 
     void close() {
-        {
-            std::lock_guard<std::mutex> lock(mtx);
-            closed = true;
-        }
-        not_full.notify_all();
-        not_empty.notify_all();
+        closed.store(true, std::memory_order_release);
     }
 
     bool is_closed() const {
-        std::lock_guard<std::mutex> lock(mtx);
-        return closed;
+        return closed.load(std::memory_order_acquire);
     }
 
 private:
     std::vector<char> buffer;
     size_t capacity;
-    size_t head;
-    size_t tail;
-    size_t count;
-    bool closed;
-    mutable std::mutex mtx;
-    std::condition_variable not_full;
-    std::condition_variable not_empty;
+    std::atomic<size_t> head;
+    std::atomic<size_t> tail;
+    std::atomic<bool> closed;
 };
 
 #endif // RING_BUFFER_HPP

@@ -5,6 +5,7 @@
 #include <atomic>
 #include <thread>
 #include <algorithm>
+#include <chrono>
 
 class RingBuffer {
 public:
@@ -14,26 +15,29 @@ public:
     // Writer side (Producer)
     size_t write(const char* data, size_t len) {
         size_t written = 0;
+        size_t local_t = tail.load(std::memory_order_relaxed);
+        size_t spin_count = 0;
+
         while (written < len) {
             if (closed.load(std::memory_order_acquire)) break;
 
             size_t h = head.load(std::memory_order_acquire);
-            size_t t = tail.load(std::memory_order_relaxed);
-
-            size_t available = (h > t) ? (h - t - 1) : (capacity - (t - h) - 1);
+            size_t available = (h > local_t) ? (h - local_t - 1) : (capacity - (local_t - h) - 1);
 
             if (available == 0) {
-                std::this_thread::yield();
+                adaptive_backoff(spin_count);
                 continue;
             }
 
+            spin_count = 0;
             size_t to_write = std::min(len - written, available);
-            size_t to_end = capacity - t;
+            size_t to_end = capacity - local_t;
             size_t chunk = std::min(to_write, to_end);
 
-            std::copy(data + written, data + written + chunk, buffer.begin() + t);
+            std::copy(data + written, data + written + chunk, buffer.begin() + local_t);
 
-            tail.store((t + chunk) % capacity, std::memory_order_release);
+            local_t = (local_t + chunk) % capacity;
+            tail.store(local_t, std::memory_order_release);
             written += chunk;
         }
         return written;
@@ -42,6 +46,8 @@ public:
     // Reader side (Consumer)
     size_t read_exactly(char* data, size_t len) {
         size_t read_count = 0;
+        size_t spin_count = 0;
+
         while (read_count < len) {
             size_t h = head.load(std::memory_order_relaxed);
             size_t t = tail.load(std::memory_order_acquire);
@@ -50,16 +56,11 @@ public:
 
             if (occupied == 0) {
                 if (closed.load(std::memory_order_acquire)) break;
-                std::this_thread::yield();
+                adaptive_backoff(spin_count);
                 continue;
             }
 
-            // Wait for the full amount requested unless the buffer is closed
-            if (occupied < (len - read_count) && !closed.load(std::memory_order_acquire)) {
-                std::this_thread::yield();
-                continue;
-            }
-
+            spin_count = 0;
             size_t to_read = std::min(len - read_count, occupied);
             size_t to_end = capacity - h;
             size_t chunk = std::min(to_read, to_end);
@@ -72,7 +73,6 @@ public:
         return read_count;
     }
 
-    // Allows checking data without consuming it
     size_t peek(char* data, size_t len) const {
         size_t h = head.load(std::memory_order_acquire);
         size_t t = tail.load(std::memory_order_acquire);
@@ -108,6 +108,18 @@ public:
     }
 
 private:
+    void adaptive_backoff(size_t& spin_count) const {
+        if (spin_count < 10) {
+            spin_count++;
+            std::this_thread::yield();
+        } else if (spin_count < 100) {
+            spin_count++;
+            std::this_thread::sleep_for(std::chrono::microseconds(50));
+        } else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    }
+
     std::vector<char> buffer;
     size_t capacity;
     std::atomic<size_t> head;

@@ -45,7 +45,7 @@ void test_size_and_peek() {
     size_t p = rb.peek(buf, 2);
     assert(p == 2);
     assert(buf[0] == 'a' && buf[1] == 'b');
-    assert(rb.size() == 3); // size should not change after peek
+    assert(rb.size() == 3);
 
     std::cout << "test_size_and_peek passed" << std::endl;
 }
@@ -72,10 +72,34 @@ void test_concurrency() {
     std::cout << "test_concurrency passed" << std::endl;
 }
 
+void test_large_payload_no_deadlock() {
+    // Buffer size is 100 bytes, payload is 1000 bytes.
+    // read_exactly should consume incrementally and allow the producer to finish.
+    RingBuffer rb(100);
+    size_t payload_size = 1000;
+    std::vector<char> send_data(payload_size, 'A');
+    std::vector<char> recv_data(payload_size, 0);
+
+    std::thread producer([&rb, &send_data]() {
+        rb.write(send_data.data(), send_data.size());
+    });
+
+    std::thread consumer([&rb, &recv_data]() {
+        rb.read_exactly(recv_data.data(), recv_data.size());
+    });
+
+    producer.join();
+    consumer.join();
+
+    assert(recv_data == send_data);
+    std::cout << "test_large_payload_no_deadlock passed" << std::endl;
+}
+
 int main() {
     test_basic();
     test_read_exactly();
     test_size_and_peek();
     test_concurrency();
+    test_large_payload_no_deadlock();
     return 0;
 }

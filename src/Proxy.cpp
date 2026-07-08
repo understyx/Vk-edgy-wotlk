@@ -9,17 +9,20 @@
 #include <openssl/hmac.h>
 #include <openssl/evp.h>
 
-size_t get_dynamic_auth_size(const char* header_accumulator, StreamDirection direction, bool& out_error) {
+size_t get_dynamic_auth_size(const char* header_accumulator, size_t available_len, StreamDirection direction, bool& out_error) {
     out_error = false;
+    if (available_len < 1) return 0;
     uint8_t opcode = static_cast<uint8_t>(header_accumulator[0]);
 
     if (direction == StreamDirection::UPSTREAM) {
         if (opcode == 0x00) {
+            if (available_len < 4) return 0;
             uint16_t dynamic_len = static_cast<uint8_t>(header_accumulator[2]) | (static_cast<uint8_t>(header_accumulator[3]) << 8);
             return 4 + dynamic_len;
         }
         if (opcode == 0x01) return 75; // Updated size
         if (opcode == 0x02) { // Read dynamic size at offset 2
+            if (available_len < 4) return 0;
             uint16_t dynamic_len = static_cast<uint8_t>(header_accumulator[2]) | (static_cast<uint8_t>(header_accumulator[3]) << 8);
             return 4 + dynamic_len;
         }
@@ -27,8 +30,10 @@ size_t get_dynamic_auth_size(const char* header_accumulator, StreamDirection dir
     }
     else {
         if (opcode == 0x00) {
+            if (available_len < 3) return 0;
             uint8_t error = header_accumulator[2];
             if (error == 0) {
+                if (available_len < 119) return 0;
                 size_t base_total = 119;
                 uint8_t security_flags = static_cast<uint8_t>(header_accumulator[118]);
                 size_t extra = 0;
@@ -40,6 +45,7 @@ size_t get_dynamic_auth_size(const char* header_accumulator, StreamDirection dir
             return 3;
         }
         if (opcode == 0x01) {
+            if (available_len < 2) return 0;
             uint8_t error = header_accumulator[1];
             if (error == 0) return 32;
             return 4;
@@ -97,29 +103,26 @@ void writer_thread(int to_fd, RingBuffer& rb, std::shared_ptr<SessionContext> co
             if (send(to_fd, packet_accumulator, n, 0) <= 0) break;
         }
         else if (current_mode == ProxyMode::WOW_AUTH) {
-            // Read first 4 bytes to check Opcode and layout signatures
-            size_t n = rb.read_exactly(packet_accumulator, 4);
-            if (n < 4) {
-                std::cerr << dir_str << " [WOW_AUTH] Failed to read initial 4-byte header token." << std::endl;
-                break;
+            size_t available = rb.peek(packet_accumulator, sizeof(packet_accumulator));
+            if (available == 0) {
+                if (rb.is_closed()) break;
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
             }
 
             bool protocol_fault = false;
-            size_t total_packet_size = get_dynamic_auth_size(packet_accumulator, direction, protocol_fault);
+            size_t total_packet_size = get_dynamic_auth_size(packet_accumulator, available, direction, protocol_fault);
             
-            std::cout << dir_str << " [WOW_AUTH_DIAG] Intercepted Opcode: 0x" 
-                      << std::hex << (int)(static_cast<uint8_t>(packet_accumulator[0])) 
-                      << " | Calculated Total Size: " << std::dec << total_packet_size 
-                      << " | Fault Flag: " << protocol_fault << std::endl;
-
             if (protocol_fault) {
                 std::cerr << dir_str << " [FATAL] get_dynamic_auth_size reported a protocol alignment fault for opcode 0x" 
                           << std::hex << (int)(static_cast<uint8_t>(packet_accumulator[0])) << std::dec << "!" << std::endl;
-                // Dump hex headers to inspect the exact format structural drift
-                std::cerr << "  -> Raw Header Hex dump: ";
-                for(size_t i=0; i<4; ++i) std::cerr << std::hex << std::setw(2) << std::setfill('0') << (int)(static_cast<uint8_t>(packet_accumulator[i])) << " ";
-                std::cerr << std::dec << std::endl;
                 break;
+            }
+
+            if (total_packet_size == 0) {
+                if (rb.is_closed()) break;
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
             }
 
             if (total_packet_size > sizeof(packet_accumulator)) {
@@ -127,14 +130,14 @@ void writer_thread(int to_fd, RingBuffer& rb, std::shared_ptr<SessionContext> co
                 break;
             }
 
-            size_t remaining_bytes = total_packet_size - 4;
-            if (remaining_bytes > 0) {
-                size_t read_bytes = rb.read_exactly(packet_accumulator + 4, remaining_bytes);
-                if (read_bytes < remaining_bytes) {
-                    std::cerr << dir_str << " [WOW_AUTH] Stream broke while reading remaining packet payload body." << std::endl;
-                    break;
-                }
+            if (available < total_packet_size) {
+                if (rb.is_closed()) break;
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
             }
+
+            size_t n = rb.read_exactly(packet_accumulator, total_packet_size);
+            if (n < total_packet_size) break;
 
             std::vector<uint8_t> mitm_packet;
             if (direction == StreamDirection::UPSTREAM) {

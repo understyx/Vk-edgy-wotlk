@@ -80,7 +80,7 @@ void SRP6Mitm::compute_session_key(const BIGNUM* S, uint8_t* K)
     uint8_t S_be[SRP_KEY_SIZE];
     memset(S_be,0,sizeof(S_be));
 
-    int bn_bytes = BN_num_bytes(S);
+    size_t bn_bytes = BN_num_bytes(S);
 
     if (bn_bytes > SRP_KEY_SIZE)
     {
@@ -88,13 +88,11 @@ void SRP6Mitm::compute_session_key(const BIGNUM* S, uint8_t* K)
                   << bn_bytes << " bytes\n";
 
         // keep only least significant 32 bytes
-        uint8_t tmp[64];
-        memset(tmp,0,sizeof(tmp));
-
-        BN_bn2bin(S,tmp);
+        std::vector<uint8_t> tmp(bn_bytes);
+        BN_bn2bin(S, tmp.data());
 
         memcpy(S_be,
-            tmp + (bn_bytes - SRP_KEY_SIZE),
+            tmp.data() + (bn_bytes - SRP_KEY_SIZE),
             SRP_KEY_SIZE
         );
     }
@@ -282,6 +280,7 @@ std::vector<uint8_t> SRP6Mitm::process_upstream(const uint8_t* data, size_t len)
         if (opcode != 0x01) return std::vector<uint8_t>(data, data + len);
         
         A_client_raw.assign(data + 1, data + 1 + SRP_KEY_SIZE);
+        if (A_client) BN_clear_free(A_client);
         A_client = le_to_bn(A_client_raw.data(), SRP_KEY_SIZE);
         uint8_t client_M1[20]; std::memcpy(client_M1, data + 1 + SRP_KEY_SIZE, 20);
 
@@ -374,6 +373,7 @@ std::vector<uint8_t> SRP6Mitm::process_downstream(const uint8_t* data, size_t le
         if (error != 0) return std::vector<uint8_t>(data, data + len);
 
         size_t offset = 3;
+        if (B_server) BN_clear_free(B_server);
         B_server = le_to_bn(data + offset, SRP_KEY_SIZE); offset += SRP_KEY_SIZE;
         uint8_t g_len = data[offset++]; g_bytes.assign(data + offset, data + offset + g_len); offset += g_len;
         uint8_t N_len = data[offset++]; N_bytes.assign(data + offset, data + offset + N_len); offset += N_len;

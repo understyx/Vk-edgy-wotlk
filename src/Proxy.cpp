@@ -18,8 +18,11 @@ size_t get_dynamic_auth_size(const char* header_accumulator, StreamDirection dir
             uint16_t dynamic_len = static_cast<uint8_t>(header_accumulator[2]) | (static_cast<uint8_t>(header_accumulator[3]) << 8);
             return 4 + dynamic_len;
         }
-        if (opcode == 0x01) return 74;
-        if (opcode == 0x02) return 4;
+        if (opcode == 0x01) return 75; // Updated size
+        if (opcode == 0x02) { // Read dynamic size at offset 2
+            uint16_t dynamic_len = static_cast<uint8_t>(header_accumulator[2]) | (static_cast<uint8_t>(header_accumulator[3]) << 8);
+            return 4 + dynamic_len;
+        }
         if (opcode == 0x03) return 57;
     }
     else {
@@ -94,23 +97,54 @@ void writer_thread(int to_fd, RingBuffer& rb, std::shared_ptr<SessionContext> co
             if (send(to_fd, packet_accumulator, n, 0) <= 0) break;
         }
         else if (current_mode == ProxyMode::WOW_AUTH) {
+            // Read first 4 bytes to check Opcode and layout signatures
             size_t n = rb.read_exactly(packet_accumulator, 4);
-            if (n < 4) break;
+            if (n < 4) {
+                std::cerr << dir_str << " [WOW_AUTH] Failed to read initial 4-byte header token." << std::endl;
+                break;
+            }
 
             bool protocol_fault = false;
             size_t total_packet_size = get_dynamic_auth_size(packet_accumulator, direction, protocol_fault);
-            if (protocol_fault || total_packet_size > sizeof(packet_accumulator)) break;
+            
+            std::cout << dir_str << " [WOW_AUTH_DIAG] Intercepted Opcode: 0x" 
+                      << std::hex << (int)(static_cast<uint8_t>(packet_accumulator[0])) 
+                      << " | Calculated Total Size: " << std::dec << total_packet_size 
+                      << " | Fault Flag: " << protocol_fault << std::endl;
+
+            if (protocol_fault) {
+                std::cerr << dir_str << " [FATAL] get_dynamic_auth_size reported a protocol alignment fault for opcode 0x" 
+                          << std::hex << (int)(static_cast<uint8_t>(packet_accumulator[0])) << std::dec << "!" << std::endl;
+                // Dump hex headers to inspect the exact format structural drift
+                std::cerr << "  -> Raw Header Hex dump: ";
+                for(size_t i=0; i<4; ++i) std::cerr << std::hex << std::setw(2) << std::setfill('0') << (int)(static_cast<uint8_t>(packet_accumulator[i])) << " ";
+                std::cerr << std::dec << std::endl;
+                break;
+            }
+
+            if (total_packet_size > sizeof(packet_accumulator)) {
+                std::cerr << dir_str << " [FATAL] Calculated packet size (" << total_packet_size << ") exceeds proxy frame buffers!" << std::endl;
+                break;
+            }
 
             size_t remaining_bytes = total_packet_size - 4;
             if (remaining_bytes > 0) {
-                if (rb.read_exactly(packet_accumulator + 4, remaining_bytes) < remaining_bytes) break;
+                size_t read_bytes = rb.read_exactly(packet_accumulator + 4, remaining_bytes);
+                if (read_bytes < remaining_bytes) {
+                    std::cerr << dir_str << " [WOW_AUTH] Stream broke while reading remaining packet payload body." << std::endl;
+                    break;
+                }
             }
 
             std::vector<uint8_t> mitm_packet;
-            if (direction == StreamDirection::UPSTREAM) mitm_packet = mitm_engine->process_upstream(reinterpret_cast<uint8_t*>(packet_accumulator), total_packet_size);
-            else mitm_packet = mitm_engine->process_downstream(reinterpret_cast<uint8_t*>(packet_accumulator), total_packet_size);
+            if (direction == StreamDirection::UPSTREAM) {
+                mitm_packet = mitm_engine->process_upstream(reinterpret_cast<uint8_t*>(packet_accumulator), total_packet_size);
+            } else {
+                mitm_packet = mitm_engine->process_downstream(reinterpret_cast<uint8_t*>(packet_accumulator), total_packet_size);
+            }
 
             if (!mitm_packet.empty()) {
+                std::cout << dir_str << " [WOW_AUTH] Injecting modified MITM verification frame (" << mitm_packet.size() << " bytes)." << std::endl;
                 if (send(to_fd, mitm_packet.data(), mitm_packet.size(), 0) <= 0) break;
             } else {
                 if (send(to_fd, packet_accumulator, total_packet_size, 0) <= 0) break;
@@ -122,6 +156,7 @@ void writer_thread(int to_fd, RingBuffer& rb, std::shared_ptr<SessionContext> co
                 std::lock_guard<std::mutex> lock(context->mtx);
                 context->mode = ProxyMode::FRAMED;
                 initialize_session_crypto(*context, tmp_k_client);
+                std::cout << "[MITM_SUCCESS] Transitioning proxy session engine cleanly to ProxyMode::FRAMED" << std::endl;
             }
         }
         else if (current_mode == ProxyMode::FRAMED) {

@@ -12,6 +12,8 @@ class SRP6Mitm {
 private:
     std::mutex mtx;
     std::string username, password;
+    std::vector<uint8_t> A_client_raw;
+    std::vector<uint8_t> B_proxy_raw;
 
     enum class MitmState { WAITING_CLIENT_CHALLENGE, WAITING_SERVER_CHALLENGE, WAITING_CLIENT_PROOF, WAITING_SERVER_PROOF, AUTH_COMPLETE };
     MitmState state = MitmState::WAITING_CLIENT_CHALLENGE;

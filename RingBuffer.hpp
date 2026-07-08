@@ -6,6 +6,7 @@
 #include <thread>
 #include <algorithm>
 #include <chrono>
+#include <new>
 
 class RingBuffer {
 public:
@@ -120,11 +121,18 @@ private:
         }
     }
 
+#ifdef __cpp_lib_hardware_interference_size
+    static constexpr size_t CacheLineSize = std::hardware_destructive_interference_size;
+#else
+    static constexpr size_t CacheLineSize = 64;
+#endif
+
     std::vector<char> buffer;
     size_t capacity;
-    std::atomic<size_t> head;
-    std::atomic<size_t> tail;
-    std::atomic<bool> closed;
+
+    alignas(CacheLineSize) std::atomic<size_t> head;
+    alignas(CacheLineSize) std::atomic<size_t> tail;
+    alignas(CacheLineSize) std::atomic<bool> closed;
 };
 
 #endif // RING_BUFFER_HPP

@@ -1,0 +1,62 @@
+VK_LAYER_PATH=/home/stygian/programming/Vk-edgy-wotlk VK_INSTANCE_LAYERS=VK_LAYER_understyx_WOTLK
+
+CreateDevice
+    |
+    v
+gOverlay.device = device
+
+CreateSwapchainKHR
+    |
+    v
+gOverlay.swapchain
+gOverlay.format
+gOverlay.extent
+
+GetSwapchainImagesKHR
+    |
+    v
+gOverlay.images[]
+
+create:
+    imageViews[]
+    renderPass
+    pipeline
+    framebuffers[]
+    commandBuffers[]
+
+QueueSubmit
+    |
+    v
+inject overlay draw commands
+
+QueuePresentKHR
+
+
+
+                 C++
+              game bridge
+                   |
+                   |
+             JSON/state data
+                   |
+                   v
+
+             JavaScript VM
+                   |
+        +----------+----------+
+        |                     |
+     Layout              Behavior
+        |                     |
+        +----------+----------+
+                   |
+                   v
+
+             ImGui renderer
+                   |
+                   v
+
+              Vulkan layer
+
+
+
+QuickJS + retained UI model + ImGui renderer

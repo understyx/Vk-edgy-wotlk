@@ -1,0 +1,220 @@
+Phase 1: Device initialization
+
+Read about:
+
+Physical devices
+Logical devices
+Queues
+
+Hook:
+
+vkCreateDevice
+
+This is where Vulkan creates the logical device. Save the VkDevice.
+
+Phase 2: Swapchain creation
+
+Read about:
+
+Swapchains
+Present modes
+Surface formats
+
+Hook:
+
+vkCreateSwapchainKHR
+
+This tells you:
+
+image format
+width/height
+number of images
+Phase 3: Swapchain images
+
+Read about:
+
+Images
+Image views
+
+Hook:
+
+vkGetSwapchainImagesKHR
+
+Now you'll have:
+
+Image 0
+Image 1
+Image 2
+
+These are what eventually appear on screen.
+
+Phase 4: Acquire
+
+Read about:
+
+Acquire/Present model
+Synchronization
+
+Hook:
+
+vkAcquireNextImageKHR
+
+Every frame you'll get something like:
+
+Current image = 2
+
+That means:
+
+"Render into image #2."
+
+Phase 5: Rendering
+
+Read about:
+
+Command pools
+Command buffers
+
+Most applications do
+
+vkBeginCommandBuffer
+
+vkCmdBeginRendering()
+or
+vkCmdBeginRenderPass()
+
+Draw...
+
+vkEndCommandBuffer()
+
+Since you're making an overlay, you don't actually need to hook these.
+
+Instead you'll make your own command buffer.
+
+Phase 6: Submission
+
+Read about:
+
+Queues
+Queue submissions
+
+Hook:
+
+vkQueueSubmit
+vkQueueSubmit2
+
+These tell the GPU:
+
+"Execute these command buffers."
+
+Phase 7: Presentation
+
+Read about:
+
+Presentation
+Image layouts
+
+Hook:
+
+vkQueuePresentKHR
+
+This is the last step.
+
+Your overlay command buffer will be submitted immediately before this.
+
+Then build your overlay
+
+Once those hooks all work, start creating Vulkan objects.
+
+Read about:
+
+Shader modules
+
+↓
+
+Pipeline layout
+
+↓
+
+Graphics pipeline
+
+↓
+
+Command pool
+
+↓
+
+Command buffer
+
+↓
+
+Vertex buffer
+Finally
+
+Record your own command buffer.
+
+It will look roughly like
+
+Pipeline barrier
+
+↓
+
+Begin rendering
+
+↓
+
+Bind pipeline
+
+↓
+
+Bind vertex buffer
+
+↓
+
+Draw(6)
+
+↓
+
+End rendering
+
+↓
+
+Pipeline barrier
+Overall picture
+CreateDevice
+        │
+        ▼
+CreateSwapchain
+        │
+        ▼
+GetSwapchainImages
+        │
+        ▼
+──────────────────────── Frame ────────────────────────
+
+AcquireNextImage
+        │
+        ▼
+App records command buffers
+        │
+        ▼
+QueueSubmit
+        │
+        ▼
+Your QueueSubmit (overlay)
+        │
+        ▼
+QueuePresentKHR
+The best tutorial for your use case
+
+Since you're writing a layer rather than an application, I highly recommend reading through https://vulkan-tutorial.com with a specific focus on these chapters:
+
+Instance
+Physical device
+Logical device and queues
+Swap chain
+Image views
+Graphics pipeline
+Command buffers
+Synchronization
+
+You can ignore the window creation parts—they're not relevant because the application (or DXVK) already creates the window and surface. Concentrate on understanding the rendering objects and the per-frame flow, since that's exactly what your layer will interact with.

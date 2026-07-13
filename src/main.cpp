@@ -1,4 +1,6 @@
+#include "vulkan_shims.h"
 #include "vkroots.h"
+#include "layer_threads.h"
 
 #include <cstdio>
 
@@ -24,6 +26,8 @@ struct OverlayContext
     VkQueue graphicsQueue = VK_NULL_HANDLE;
     uint32_t graphicsQueueFamily = 0;
     std::vector<VkCommandBuffer> commandBuffers;
+
+    LayerThreadManager threadManager;
 } gOverlay;
 
 
@@ -31,18 +35,28 @@ struct OverlayContext
   class VkInstanceOverrides {
 public:
     static VkResult CreateDevice(
-      const vkroots::VkDeviceDispatch& pDispatch, VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice) 
+      const vkroots::VkPhysicalDeviceDispatch& pDispatch, VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
     {
     VkResult result = pDispatch.CreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
     if (result == VK_SUCCESS)
     {
         gOverlay.device = *pDevice;
+        // Start the triple-buffered game data, JS engine, and rendering threads
+        gOverlay.threadManager.start();
     }
     return result;
   }
   };
   class VkDeviceOverrides {
   public:
+
+    static void DestroyDevice(
+        const vkroots::VkDeviceDispatch& pDispatch, VkDevice device, const VkAllocationCallbacks* pAllocator)
+    {
+        // Stop UI threads cleanly
+        gOverlay.threadManager.stop();
+        pDispatch.DestroyDevice(device, pAllocator);
+    }
 
     static VkResult CreateSwapchainKHR(
     const vkroots::VkDeviceDispatch& pDispatch,
@@ -118,6 +132,20 @@ public:
   static VkResult QueuePresentKHR(
         const vkroots::VkQueueDispatch& pDispatch, VkQueue queue, const VkPresentInfoKHR* pPresentInfo) {
         printf("Frame Finished. Presenting image: %u\n", pPresentInfo->pImageIndices[0]);
+
+        // Simulating the 3rd thread rendering output blit/overlay
+        UIData uiFrame;
+        gOverlay.threadManager.getLatestUIFrame(uiFrame);
+        if (uiFrame.uiFrameId > 0) {
+            printf("[Vulkan Layer present] Overlaying UI frame #%u (from game frame #%u) onto swapchain image:\n",
+                   uiFrame.uiFrameId, uiFrame.sourceGameFrameId);
+            for (const auto& element : uiFrame.elements) {
+                printf("  -> Element '%s' [%s] at (%.1f, %.1f), size %.1f x %.1f, Text: '%s'\n",
+                       element.id.c_str(), element.type.c_str(), element.screenX, element.screenY,
+                       element.width, element.height, element.text.c_str());
+            }
+        }
+
         return pDispatch.QueuePresentKHR(queue, pPresentInfo);
       }
 

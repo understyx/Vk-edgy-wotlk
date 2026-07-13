@@ -1,0 +1,14 @@
+{
+    "file_format_version": "1.0.0",
+    "layer": {
+        "name": "VK_LAYER_MODERN_UI",
+        "type": "GLOBAL",
+        "library_path": "./libVkModernUILayer.so",
+        "api_version": "1.3.0",
+        "implementation_version": "1",
+        "description": "Modern UI Overlay Vulkan Layer with JS/HTML Thread rendering",
+        "functions": {
+            "vkNegotiateLoaderLayerInterfaceVersion": "vkNegotiateLoaderLayerInterfaceVersion"
+        }
+    }
+}

@@ -33,9 +33,18 @@ struct UIElement {
     float value = 0.0f;     // for progress/health bars (0.0 to 1.0)
 };
 
+// Represents a Vulkan Texture / Plane where HTML+JS is rendered into pixels (e.g., Ultralight engine output)
+struct WebTexture {
+    uint32_t width = 800;
+    uint32_t height = 600;
+    std::vector<uint8_t> rgbaPixels; // RGBA 32-bit pixel buffer
+    bool isDirty = false;
+};
+
 // Structure for UI Data (passed from JS/HTML thread to Vulkan rendering thread)
 struct UIData {
     uint32_t uiFrameId = 0;
     uint32_t sourceGameFrameId = 0;
     std::vector<UIElement> elements;
+    WebTexture webTexture; // The HTML/JS rendered texture plane
 };

@@ -34,11 +34,11 @@ int main() {
             bool foundHpBar = false;
             bool foundPosLabel = false;
             for (const auto& elem : uiFrame.elements) {
-                if (elem.id == "player_hp_bar") {
+                if (elem.id == "addon_player_hp") {
                     foundHpBar = true;
                     assert(elem.type == "bar");
                     assert(elem.value > 0.0f && elem.value <= 1.0f);
-                } else if (elem.id == "player_pos") {
+                } else if (elem.id == "addon_coord_tracker") {
                     foundPosLabel = true;
                     assert(elem.type == "label");
                 }
@@ -49,8 +49,8 @@ int main() {
 
             std::cout << "[Test Sample] UI Frame #" << uiFrame.uiFrameId
                       << " (Source Game Frame #" << uiFrame.sourceGameFrameId
-                      << ") contains " << uiFrame.elements.size() << " elements. Target target_frame: "
-                      << uiFrame.elements[2].text << std::endl;
+                      << ") contains " << uiFrame.elements.size() << " elements. Target/HP bar info: "
+                      << uiFrame.elements[0].text << std::endl;
 
             // Ensure frame ID is monotonically increasing
             assert(uiFrame.uiFrameId >= lastUiFrameId && "UI Frame ID must be monotonically increasing.");

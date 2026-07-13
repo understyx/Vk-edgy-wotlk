@@ -137,8 +137,25 @@ public:
         UIData uiFrame;
         gOverlay.threadManager.getLatestUIFrame(uiFrame);
         if (uiFrame.uiFrameId > 0) {
-            printf("[Vulkan Layer present] Overlaying UI frame #%u (from game frame #%u) onto swapchain image:\n",
-                   uiFrame.uiFrameId, uiFrame.sourceGameFrameId);
+            printf("[Vulkan Layer present] Compositing HTML/JS WebTexture onto swapchain image:\n");
+            printf("  -> UI Frame #%u (from game frame #%u) | Size: %u x %u pixels | Buffer: %zu bytes\n",
+                   uiFrame.uiFrameId, uiFrame.sourceGameFrameId,
+                   uiFrame.webTexture.width, uiFrame.webTexture.height, uiFrame.webTexture.rgbaPixels.size());
+
+            // Sample a few pixels to prove rendering has drawn on the texture!
+            // Let's sample pixel at (35, 35) which is inside the green Player HP Bar:
+            uint32_t sampleX = 35;
+            uint32_t sampleY = 35;
+            uint32_t offset = (sampleY * uiFrame.webTexture.width + sampleX) * 4;
+            if (offset + 3 < uiFrame.webTexture.rgbaPixels.size()) {
+                uint8_t r = uiFrame.webTexture.rgbaPixels[offset + 0];
+                uint8_t g = uiFrame.webTexture.rgbaPixels[offset + 1];
+                uint8_t b = uiFrame.webTexture.rgbaPixels[offset + 2];
+                uint8_t a = uiFrame.webTexture.rgbaPixels[offset + 3];
+                printf("  -> Pixel sample at HP Bar (%u, %u): RGBA(%u, %u, %u, %u)\n",
+                       sampleX, sampleY, r, g, b, a);
+            }
+
             for (const auto& element : uiFrame.elements) {
                 printf("  -> Element '%s' [%s] at (%.1f, %.1f), size %.1f x %.1f, Text: '%s'\n",
                        element.id.c_str(), element.type.c_str(), element.screenX, element.screenY,

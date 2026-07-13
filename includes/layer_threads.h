@@ -2,6 +2,7 @@
 
 #include "double_buffer.h"
 #include "communication_types.h"
+#include "js_addon_engine.h"
 
 #include <thread>
 #include <chrono>
@@ -25,6 +26,9 @@ private:
     std::thread m_gameDataThread;
     std::thread m_jsHtmlThread;
     std::thread m_renderingThread;
+
+    // The JS Addon Shim Sandbox & HTML/CSS Canvas rendering engine (e.g. Ultralight)
+    JSShimRuntime m_jsRuntime;
 
 public:
     LayerThreadManager() = default;
@@ -122,75 +126,9 @@ private:
             uiFrameCount++;
             backUI->uiFrameId = uiFrameCount;
             backUI->sourceGameFrameId = localGameData.frameId;
-            backUI->elements.clear();
 
-            // Run simulated HTML/JS layout rendering to produce elements:
-
-            // 1. Player Health Bar Element
-            UIElement playerHpBar;
-            playerHpBar.id = "player_hp_bar";
-            playerHpBar.type = "bar";
-            playerHpBar.screenX = 20.0f;
-            playerHpBar.screenY = 20.0f;
-            playerHpBar.width = 200.0f;
-            playerHpBar.height = 25.0f;
-            playerHpBar.r = 0;
-            playerHpBar.g = 220;
-            playerHpBar.b = 0;
-            playerHpBar.a = 255;
-            playerHpBar.text = "Player HP: " + std::to_string(localGameData.playerHp) + "/" + std::to_string(localGameData.playerMaxHp);
-            playerHpBar.value = (float)localGameData.playerHp / localGameData.playerMaxHp;
-            backUI->elements.push_back(playerHpBar);
-
-            // 2. Player Position Coordinates text display
-            UIElement posLabel;
-            posLabel.id = "player_pos";
-            posLabel.type = "label";
-            posLabel.screenX = 20.0f;
-            posLabel.screenY = 50.0f;
-            posLabel.width = 300.0f;
-            posLabel.height = 20.0f;
-            posLabel.r = 255;
-            posLabel.g = 255;
-            posLabel.b = 255;
-            posLabel.a = 230;
-
-            char posText[128];
-            snprintf(posText, sizeof(posText), "X: %.2f | Y: %.2f | Z: %.2f", localGameData.playerX, localGameData.playerY, localGameData.playerZ);
-            posLabel.text = posText;
-            posLabel.value = 0.0f;
-            backUI->elements.push_back(posLabel);
-
-            // 3. Target Frame UI Element
-            UIElement targetFrame;
-            targetFrame.id = "target_frame";
-            targetFrame.type = "box";
-            targetFrame.screenX = 400.0f;
-            targetFrame.screenY = 20.0f;
-            targetFrame.width = 220.0f;
-            targetFrame.height = 50.0f;
-            targetFrame.r = 220;
-            targetFrame.g = 0;
-            targetFrame.b = 0;
-            targetFrame.a = 255;
-            targetFrame.text = localGameData.targetName + " (HP: " + std::to_string(localGameData.targetHp) + "%)";
-            targetFrame.value = (float)localGameData.targetHp / localGameData.targetMaxHp;
-            backUI->elements.push_back(targetFrame);
-
-            // 4. StyxHTML engine version watermark
-            UIElement watermark;
-            watermark.id = "watermark";
-            watermark.type = "label";
-            watermark.screenX = 20.0f;
-            watermark.screenY = 700.0f;
-            watermark.width = 400.0f;
-            watermark.height = 15.0f;
-            watermark.r = 120;
-            watermark.g = 150;
-            watermark.b = 255;
-            watermark.a = 255;
-            watermark.text = "Modernized UI via StyxHTML VM (Thread 2) -> double buffered output";
-            backUI->elements.push_back(watermark);
+            // Execute registered JS addons and render directly onto backUI->webTexture plane
+            m_jsRuntime.runAddons(localGameData, *backUI);
 
             // Swap buffers atomically to make it available for the rendering thread
             uiDataBuffer.swap();
@@ -208,12 +146,16 @@ private:
 
         while (m_running.load()) {
             if (uiDataBuffer.hasNewData()) {
-                // Read latest UI data compiled from Thread 2
+                // Read latest UI data compiled from Thread 2 (contains WebTexture + elements list)
                 uiDataBuffer.getFrontCopy(localUIData);
 
-                // Simulate compilation and optimization of Vulkan pipeline resources
-                // (e.g. organizing vertices, indices, updating descriptors, creating transfer barriers)
-                // Once Vulkan-ready structs/commands are prepared, copy them to latestRenderedUIData
+                // Simulate upload of WebTexture to GPU as a Vulkan image
+                if (localUIData.webTexture.isDirty) {
+                    // Simulating Vulkan copy/upload commands (vkCmdCopyBufferToImage)
+                    localUIData.webTexture.isDirty = false;
+                }
+
+                // Copy to final presentation buffer under lock
                 {
                     std::lock_guard<std::mutex> lock(renderedUIMutex);
                     latestRenderedUIData = localUIData;

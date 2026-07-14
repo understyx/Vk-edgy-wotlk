@@ -1,6 +1,13 @@
 #include "vkroots.h"
+#include "common/PointerSwapBuffer.hpp"
+#include "game_data/GameDataQuery.hpp"
+#include "ultralight_renderer/WebUIRenderingEngine.hpp"
+#include "vulkan_renderer/VulkanOverlayRenderer.hpp"
 
 #include <cstdio>
+#include <vector>
+#include <thread>
+#include <atomic>
 
 namespace WoTLKGuiLayer {
 
@@ -24,6 +31,33 @@ struct OverlayContext
     VkQueue graphicsQueue = VK_NULL_HANDLE;
     uint32_t graphicsQueueFamily = 0;
     std::vector<VkCommandBuffer> commandBuffers;
+
+    // Multi-threaded Modern Pipeline components
+    std::atomic<bool> pipelineRunning{false};
+    std::thread gameThread;
+    std::thread uiThread;
+    std::thread renderThread;
+
+    PointerSwapBuffer<GameData::TelemetryData> gameDataBuffer;
+    PointerSwapBuffer<UltralightRenderer::WebTexture> uiTextureBuffer;
+
+    void startPipeline() {
+        if (pipelineRunning) return;
+        pipelineRunning = true;
+        gameThread = std::thread(GameData::gameDataThreadLoop, std::ref(pipelineRunning), std::ref(gameDataBuffer));
+        uiThread = std::thread(UltralightRenderer::jsHtmlEngineThreadLoop, std::ref(pipelineRunning), std::ref(gameDataBuffer), std::ref(uiTextureBuffer));
+        renderThread = std::thread(VulkanRenderer::renderingThreadLoop, std::ref(pipelineRunning), std::ref(uiTextureBuffer));
+        printf("WoTLK 3-stage Modern UI Overlay pipeline successfully initiated.\n");
+    }
+
+    void stopPipeline() {
+        if (!pipelineRunning) return;
+        pipelineRunning = false;
+        if (gameThread.joinable()) gameThread.join();
+        if (uiThread.joinable()) uiThread.join();
+        if (renderThread.joinable()) renderThread.join();
+        printf("WoTLK 3-stage Modern UI Overlay pipeline stopped.\n");
+    }
 } gOverlay;
 
 
@@ -31,7 +65,7 @@ struct OverlayContext
   class VkInstanceOverrides {
 public:
     static VkResult CreateDevice(
-      const vkroots::VkDeviceDispatch& pDispatch, VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice) 
+      const vkroots::VkPhysicalDeviceDispatch& pDispatch, VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
     {
     VkResult result = pDispatch.CreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
     if (result == VK_SUCCESS)
@@ -63,6 +97,8 @@ public:
         gOverlay.swapchain = *pSwapchain;
         gOverlay.extent = pCreateInfo->imageExtent;
         gOverlay.format = pCreateInfo->imageFormat;
+        // Start multi-threaded modern UI layout pipeline components synchronized with swapchain
+        gOverlay.startPipeline();
     }
 
     return result;
@@ -71,6 +107,7 @@ public:
     static void DestroySwapchainKHR(
         const vkroots::VkDeviceDispatch& pDispatch, VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator)
         {
+          gOverlay.stopPipeline();
           return pDispatch.DestroySwapchainKHR(device,swapchain, pAllocator);
         }
     static VkResult GetSwapchainImagesKHR(
@@ -117,7 +154,29 @@ public:
   
   static VkResult QueuePresentKHR(
         const vkroots::VkQueueDispatch& pDispatch, VkQueue queue, const VkPresentInfoKHR* pPresentInfo) {
-        printf("Frame Finished. Presenting image: %u\n", pPresentInfo->pImageIndices[0]);
+        uint32_t imageIndex = pPresentInfo->pImageIndices[0];
+        printf("Frame Finished. Presenting image: %u\n", imageIndex);
+
+        // Retrieve the latest dynamic layout render texture from our HTML/CSS engine
+        bool hasNewTexture = gOverlay.uiTextureBuffer.swapConsumer();
+        if (hasNewTexture || gOverlay.uiTextureBuffer.getReadBuffer()->rgbaPixels.size() > 0) {
+            const UltralightRenderer::WebTexture* uiTex = gOverlay.uiTextureBuffer.getReadBuffer();
+
+            // To render the overlay, we would transition the swapchain image to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            // bind our Vulkan render pass, pipeline, and descriptor sets (holding the uploaded UI texture),
+            // record draw commands inside our command buffer to draw a full-screen quad,
+            // and submit it to the graphics queue before presentation.
+            //
+            // Conceptually:
+            // vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+            // vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, gOverlay.pipeline);
+            // vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, gOverlay.pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+            // vkCmdDraw(cmd, 4, 1, 0, 0);
+            // vkCmdEndRenderPass(cmd);
+
+            (void)uiTex; // Mark as used for compiler
+        }
+
         return pDispatch.QueuePresentKHR(queue, pPresentInfo);
       }
 

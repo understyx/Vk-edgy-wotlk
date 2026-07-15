@@ -32,17 +32,20 @@ bool UltralightManager::Initialize(uint32_t width, uint32_t height, const std::s
     
     try {
         // Create Ultralight configuration
-        auto config = ultralight::Config::Create();
+        ultralight::Config config;
         
         if (!resourcePath.empty()) {
-            config->set_resource_path(ultralight::String(resourcePath.c_str()));
+            config.resource_path_prefix = ultralight::String(resourcePath.c_str());
         }
         
         // Set other configuration options as needed
-        config->set_cache_path(ultralight::String("./cache"));
+        config.cache_path = ultralight::String("./cache");
+        
+        // Set the config on the Platform singleton
+        ultralight::Platform::instance().set_config(config);
         
         // Create the renderer
-        mRenderer = ultralight::Renderer::Create(config);
+        mRenderer = ultralight::Renderer::Create();
         if (!mRenderer) {
             fprintf(stderr, "UltralightManager: Failed to create Ultralight renderer\n");
             return false;
@@ -50,7 +53,8 @@ bool UltralightManager::Initialize(uint32_t width, uint32_t height, const std::s
         
         // Create a view with the specified dimensions
         auto viewConfig = ultralight::ViewConfig();
-        mView = mRenderer->CreateView(mWidth, mHeight, viewConfig);
+        // Use the default session (nullptr)
+        mView = mRenderer->CreateView(mWidth, mHeight, viewConfig, nullptr);
         if (!mView) {
             fprintf(stderr, "UltralightManager: Failed to create Ultralight view\n");
             return false;

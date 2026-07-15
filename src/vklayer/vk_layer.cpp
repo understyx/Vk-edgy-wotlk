@@ -1,5 +1,7 @@
 #include "vklayer/vk_layer.h"
+#include "jshtml/jshtml.h"
 #include <cstdio>
+#include <cstring>
 
 namespace WoTLKGuiLayer {
 
@@ -11,7 +13,7 @@ OverlayContext gOverlay;
 // ============================================================================
 
 VkResult VkInstanceOverrides::CreateDevice(
-    const vkroots::VkDeviceDispatch& pDispatch, 
+    const vkroots::VkPhysicalDeviceDispatch& pDispatch, 
     VkPhysicalDevice physicalDevice, 
     const VkDeviceCreateInfo* pCreateInfo, 
     const VkAllocationCallbacks* pAllocator, 
@@ -48,6 +50,19 @@ VkResult VkDeviceOverrides::CreateSwapchainKHR(
         gOverlay.swapchain = *pSwapchain;
         gOverlay.extent = pCreateInfo->imageExtent;
         gOverlay.format = pCreateInfo->imageFormat;
+        
+        // Initialize HTML renderer with the swapchain dimensions
+        if (!gOverlay.htmlRenderer) {
+            auto renderer = new WoWHTML::HTMLRenderer();
+            printf("Initializing HTMLRenderer with dimensions: %u x %u\n", 
+                   gOverlay.extent.width, gOverlay.extent.height);
+            if (!renderer->Initialize(gOverlay.extent.width, gOverlay.extent.height)) {
+                printf("Warning: Failed to initialize HTMLRenderer\n");
+                delete renderer;
+                renderer = nullptr;
+            }
+            gOverlay.htmlRenderer = renderer;
+        }
     }
 
     return result;
@@ -59,6 +74,14 @@ void VkDeviceOverrides::DestroySwapchainKHR(
     VkSwapchainKHR swapchain, 
     const VkAllocationCallbacks* pAllocator)
 {
+    // Cleanup HTML renderer
+    if (gOverlay.htmlRenderer) {
+        printf("Destroying HTMLRenderer\n");
+        auto renderer = static_cast<WoWHTML::HTMLRenderer*>(gOverlay.htmlRenderer);
+        delete renderer;
+        gOverlay.htmlRenderer = nullptr;
+    }
+    
     return pDispatch.DestroySwapchainKHR(device, swapchain, pAllocator);
 }
 
@@ -122,6 +145,15 @@ VkResult VkDeviceOverrides::QueuePresentKHR(
     VkQueue queue, 
     const VkPresentInfoKHR* pPresentInfo)
 {
+    // Render the Ultralight UI if renderer is initialized
+    if (gOverlay.htmlRenderer) {
+        auto renderer = static_cast<WoWHTML::HTMLRenderer*>(gOverlay.htmlRenderer);
+        uint64_t uiTextureHandle = renderer->RenderToTexture();
+        if (uiTextureHandle != 0) {
+            printf("UI rendered: texture handle = 0x%lx\n", uiTextureHandle);
+        }
+    }
+    
     printf("Frame Finished. Presenting image: %u\n", pPresentInfo->pImageIndices[0]);
     return pDispatch.QueuePresentKHR(queue, pPresentInfo);
 }

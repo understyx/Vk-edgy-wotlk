@@ -316,6 +316,7 @@ namespace vkroots {
     static inline const VkPhysicalDeviceDispatch *AssignDispatchTable(VkPhysicalDevice physDev, const VkInstanceDispatch *pDispatch) { return PhysicalDeviceDispatches.create(physDev, physDev, pDispatch); }
     static inline const VkCommandBufferDispatch *AssignDispatchTable(VkCommandBuffer cmdBuffer, const VkDeviceDispatch *pDispatch) { return CommandBufferDispatches.create(cmdBuffer, cmdBuffer, pDispatch); }
     static inline const VkQueueDispatch *AssignDispatchTable(VkQueue queue, const VkDeviceDispatch *pDispatch) { return QueueDispatches.create(queue, queue, pDispatch); }
+    static inline const VkExternalComputeQueueNVDispatch *AssignDispatchTable(VkExternalComputeQueueNV queue, const VkDeviceDispatch *pDispatch) { return ExternalComputeQueueDispatches.create(queue, queue, pDispatch); }
     static inline void UnassignDispatchTable(VkPhysicalDevice physDev) { PhysicalDeviceDispatches.erase(physDev); }
     static inline void UnassignDispatchTable(VkCommandBuffer cmdBuffer) { CommandBufferDispatches.erase(cmdBuffer); }
     static inline void UnassignDispatchTable(VkQueue queue) { QueueDispatches.erase(queue); }
@@ -327,6 +328,7 @@ namespace vkroots {
   static inline const VkDeviceDispatch*                 LookupDispatch        (VkDevice device)                                 { return tables::DeviceDispatches.find(device); }
   static inline const VkQueueDispatch*                  LookupDispatch        (VkQueue device)                                  { return tables::QueueDispatches.find(device); }
   static inline const VkCommandBufferDispatch*          LookupDispatch        (VkCommandBuffer cmdBuffer)                       { return tables::CommandBufferDispatches.find(cmdBuffer); }
+  static inline const VkExternalComputeQueueNVDispatch* LookupDispatch        (VkExternalComputeQueueNV externalComputeQueueNV) { return tables::ExternalComputeQueueDispatches.find(externalComputeQueueNV); }
 
   struct VkInstanceProcAddrFuncs {
     PFN_vkGetInstanceProcAddr NextGetInstanceProcAddr;
@@ -9741,6 +9743,7 @@ namespace vkroots {
 #endif
   template <typename InstanceOverrides, typename DeviceOverrides>
   static void wrap_GetExternalComputeQueueDataNV(VkExternalComputeQueueNV externalQueue, VkExternalComputeQueueDataParamsNV *params, void *pData) {
+    const VkExternalComputeQueueNVDispatch* dispatch = LookupDispatch(externalQueue);
     DeviceOverrides::GetExternalComputeQueueDataNV(*dispatch, externalQueue, params, pData);
   }
 
@@ -21659,6 +21662,12 @@ namespace vkroots {
   template <> constexpr VkStructureType ResolveSType<VkBindSparseInfo>() { return VK_STRUCTURE_TYPE_BIND_SPARSE_INFO; }
   template <> constexpr VkStructureType ResolveSType<const VkBindSparseInfo>() { return VK_STRUCTURE_TYPE_BIND_SPARSE_INFO; }
 
+  template <> constexpr VkStructureType ResolveSType<VkBindTensorMemoryInfoARM>() { return VK_STRUCTURE_TYPE_BIND_TENSOR_MEMORY_INFO_ARM; }
+  template <> constexpr VkStructureType ResolveSType<const VkBindTensorMemoryInfoARM>() { return VK_STRUCTURE_TYPE_BIND_TENSOR_MEMORY_INFO_ARM; }
+
+  template <> constexpr VkStructureType ResolveSType<VkBindVideoSessionMemoryInfoKHR>() { return VK_STRUCTURE_TYPE_BIND_VIDEO_SESSION_MEMORY_INFO_KHR; }
+  template <> constexpr VkStructureType ResolveSType<const VkBindVideoSessionMemoryInfoKHR>() { return VK_STRUCTURE_TYPE_BIND_VIDEO_SESSION_MEMORY_INFO_KHR; }
+
   template <> constexpr VkStructureType ResolveSType<VkBlitImageCubicWeightsInfoQCOM>() { return VK_STRUCTURE_TYPE_BLIT_IMAGE_CUBIC_WEIGHTS_INFO_QCOM; }
   template <> constexpr VkStructureType ResolveSType<const VkBlitImageCubicWeightsInfoQCOM>() { return VK_STRUCTURE_TYPE_BLIT_IMAGE_CUBIC_WEIGHTS_INFO_QCOM; }
 
@@ -21731,6 +21740,9 @@ namespace vkroots {
   template <> constexpr VkStructureType ResolveSType<VkBufferViewCreateInfo>() { return VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO; }
   template <> constexpr VkStructureType ResolveSType<const VkBufferViewCreateInfo>() { return VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO; }
 
+  template <> constexpr VkStructureType ResolveSType<VkBuildPartitionedAccelerationStructureInfoNV>() { return VK_STRUCTURE_TYPE_BUILD_PARTITIONED_ACCELERATION_STRUCTURE_INFO_NV; }
+  template <> constexpr VkStructureType ResolveSType<const VkBuildPartitionedAccelerationStructureInfoNV>() { return VK_STRUCTURE_TYPE_BUILD_PARTITIONED_ACCELERATION_STRUCTURE_INFO_NV; }
+
   template <> constexpr VkStructureType ResolveSType<VkCalibratedTimestampInfoKHR>() { return VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_KHR; }
   template <> constexpr VkStructureType ResolveSType<const VkCalibratedTimestampInfoKHR>() { return VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_KHR; }
 
@@ -21784,6 +21796,9 @@ namespace vkroots {
 
   template <> constexpr VkStructureType ResolveSType<VkComputePipelineCreateInfo>() { return VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO; }
   template <> constexpr VkStructureType ResolveSType<const VkComputePipelineCreateInfo>() { return VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO; }
+
+  template <> constexpr VkStructureType ResolveSType<VkComputePipelineIndirectBufferInfoNV>() { return VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_INDIRECT_BUFFER_INFO_NV; }
+  template <> constexpr VkStructureType ResolveSType<const VkComputePipelineIndirectBufferInfoNV>() { return VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_INDIRECT_BUFFER_INFO_NV; }
 
   template <> constexpr VkStructureType ResolveSType<VkConditionalRenderingBeginInfoEXT>() { return VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT; }
   template <> constexpr VkStructureType ResolveSType<const VkConditionalRenderingBeginInfoEXT>() { return VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT; }
@@ -21847,6 +21862,9 @@ namespace vkroots {
 
   template <> constexpr VkStructureType ResolveSType<VkCopyMicromapToMemoryInfoEXT>() { return VK_STRUCTURE_TYPE_COPY_MICROMAP_TO_MEMORY_INFO_EXT; }
   template <> constexpr VkStructureType ResolveSType<const VkCopyMicromapToMemoryInfoEXT>() { return VK_STRUCTURE_TYPE_COPY_MICROMAP_TO_MEMORY_INFO_EXT; }
+
+  template <> constexpr VkStructureType ResolveSType<VkCopyTensorInfoARM>() { return VK_STRUCTURE_TYPE_COPY_TENSOR_INFO_ARM; }
+  template <> constexpr VkStructureType ResolveSType<const VkCopyTensorInfoARM>() { return VK_STRUCTURE_TYPE_COPY_TENSOR_INFO_ARM; }
 
 #ifdef VK_ENABLE_BETA_EXTENSIONS
   template <> constexpr VkStructureType ResolveSType<VkCudaFunctionCreateInfoNV>() { return VK_STRUCTURE_TYPE_CUDA_FUNCTION_CREATE_INFO_NV; }
@@ -21970,6 +21988,9 @@ namespace vkroots {
   template <> constexpr VkStructureType ResolveSType<VkDescriptorGetInfoEXT>() { return VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT; }
   template <> constexpr VkStructureType ResolveSType<const VkDescriptorGetInfoEXT>() { return VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT; }
 
+  template <> constexpr VkStructureType ResolveSType<VkDescriptorGetTensorInfoARM>() { return VK_STRUCTURE_TYPE_DESCRIPTOR_GET_TENSOR_INFO_ARM; }
+  template <> constexpr VkStructureType ResolveSType<const VkDescriptorGetTensorInfoARM>() { return VK_STRUCTURE_TYPE_DESCRIPTOR_GET_TENSOR_INFO_ARM; }
+
   template <> constexpr VkStructureType ResolveSType<VkDescriptorPoolCreateInfo>() { return VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO; }
   template <> constexpr VkStructureType ResolveSType<const VkDescriptorPoolCreateInfo>() { return VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO; }
 
@@ -22083,6 +22104,9 @@ namespace vkroots {
 
   template <> constexpr VkStructureType ResolveSType<VkDeviceQueueShaderCoreControlCreateInfoARM>() { return VK_STRUCTURE_TYPE_DEVICE_QUEUE_SHADER_CORE_CONTROL_CREATE_INFO_ARM; }
   template <> constexpr VkStructureType ResolveSType<const VkDeviceQueueShaderCoreControlCreateInfoARM>() { return VK_STRUCTURE_TYPE_DEVICE_QUEUE_SHADER_CORE_CONTROL_CREATE_INFO_ARM; }
+
+  template <> constexpr VkStructureType ResolveSType<VkDeviceTensorMemoryRequirementsARM>() { return VK_STRUCTURE_TYPE_DEVICE_TENSOR_MEMORY_REQUIREMENTS_ARM; }
+  template <> constexpr VkStructureType ResolveSType<const VkDeviceTensorMemoryRequirementsARM>() { return VK_STRUCTURE_TYPE_DEVICE_TENSOR_MEMORY_REQUIREMENTS_ARM; }
 
   template <> constexpr VkStructureType ResolveSType<VkDirectDriverLoadingInfoLUNARG>() { return VK_STRUCTURE_TYPE_DIRECT_DRIVER_LOADING_INFO_LUNARG; }
   template <> constexpr VkStructureType ResolveSType<const VkDirectDriverLoadingInfoLUNARG>() { return VK_STRUCTURE_TYPE_DIRECT_DRIVER_LOADING_INFO_LUNARG; }
@@ -22268,8 +22292,14 @@ namespace vkroots {
   template <> constexpr VkStructureType ResolveSType<VkExternalMemoryImageCreateInfoNV>() { return VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV; }
   template <> constexpr VkStructureType ResolveSType<const VkExternalMemoryImageCreateInfoNV>() { return VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV; }
 
+  template <> constexpr VkStructureType ResolveSType<VkExternalMemoryTensorCreateInfoARM>() { return VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_TENSOR_CREATE_INFO_ARM; }
+  template <> constexpr VkStructureType ResolveSType<const VkExternalMemoryTensorCreateInfoARM>() { return VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_TENSOR_CREATE_INFO_ARM; }
+
   template <> constexpr VkStructureType ResolveSType<VkExternalSemaphoreProperties>() { return VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES; }
   template <> constexpr VkStructureType ResolveSType<const VkExternalSemaphoreProperties>() { return VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES; }
+
+  template <> constexpr VkStructureType ResolveSType<VkExternalTensorPropertiesARM>() { return VK_STRUCTURE_TYPE_EXTERNAL_TENSOR_PROPERTIES_ARM; }
+  template <> constexpr VkStructureType ResolveSType<const VkExternalTensorPropertiesARM>() { return VK_STRUCTURE_TYPE_EXTERNAL_TENSOR_PROPERTIES_ARM; }
 
   template <> constexpr VkStructureType ResolveSType<VkFenceCreateInfo>() { return VK_STRUCTURE_TYPE_FENCE_CREATE_INFO; }
   template <> constexpr VkStructureType ResolveSType<const VkFenceCreateInfo>() { return VK_STRUCTURE_TYPE_FENCE_CREATE_INFO; }
@@ -22296,6 +22326,9 @@ namespace vkroots {
 
   template <> constexpr VkStructureType ResolveSType<VkFrameBoundaryEXT>() { return VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT; }
   template <> constexpr VkStructureType ResolveSType<const VkFrameBoundaryEXT>() { return VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT; }
+
+  template <> constexpr VkStructureType ResolveSType<VkFrameBoundaryTensorsARM>() { return VK_STRUCTURE_TYPE_FRAME_BOUNDARY_TENSORS_ARM; }
+  template <> constexpr VkStructureType ResolveSType<const VkFrameBoundaryTensorsARM>() { return VK_STRUCTURE_TYPE_FRAME_BOUNDARY_TENSORS_ARM; }
 
   template <> constexpr VkStructureType ResolveSType<VkFramebufferAttachmentImageInfo>() { return VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO; }
   template <> constexpr VkStructureType ResolveSType<const VkFramebufferAttachmentImageInfo>() { return VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO; }
@@ -22628,6 +22661,9 @@ namespace vkroots {
 
   template <> constexpr VkStructureType ResolveSType<VkMemoryDedicatedAllocateInfo>() { return VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO; }
   template <> constexpr VkStructureType ResolveSType<const VkMemoryDedicatedAllocateInfo>() { return VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO; }
+
+  template <> constexpr VkStructureType ResolveSType<VkMemoryDedicatedAllocateInfoTensorARM>() { return VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_TENSOR_ARM; }
+  template <> constexpr VkStructureType ResolveSType<const VkMemoryDedicatedAllocateInfoTensorARM>() { return VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_TENSOR_ARM; }
 
   template <> constexpr VkStructureType ResolveSType<VkMemoryDedicatedRequirements>() { return VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS; }
   template <> constexpr VkStructureType ResolveSType<const VkMemoryDedicatedRequirements>() { return VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS; }
@@ -24808,8 +24844,14 @@ namespace vkroots {
   template <> constexpr VkStructureType ResolveSType<VkVideoFormatAV1QuantizationMapPropertiesKHR>() { return VK_STRUCTURE_TYPE_VIDEO_FORMAT_AV1_QUANTIZATION_MAP_PROPERTIES_KHR; }
   template <> constexpr VkStructureType ResolveSType<const VkVideoFormatAV1QuantizationMapPropertiesKHR>() { return VK_STRUCTURE_TYPE_VIDEO_FORMAT_AV1_QUANTIZATION_MAP_PROPERTIES_KHR; }
 
+  template <> constexpr VkStructureType ResolveSType<VkVideoFormatH265QuantizationMapPropertiesKHR>() { return VK_STRUCTURE_TYPE_VIDEO_FORMAT_H265_QUANTIZATION_MAP_PROPERTIES_KHR; }
+  template <> constexpr VkStructureType ResolveSType<const VkVideoFormatH265QuantizationMapPropertiesKHR>() { return VK_STRUCTURE_TYPE_VIDEO_FORMAT_H265_QUANTIZATION_MAP_PROPERTIES_KHR; }
+
   template <> constexpr VkStructureType ResolveSType<VkVideoFormatPropertiesKHR>() { return VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR; }
   template <> constexpr VkStructureType ResolveSType<const VkVideoFormatPropertiesKHR>() { return VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR; }
+
+  template <> constexpr VkStructureType ResolveSType<VkVideoFormatQuantizationMapPropertiesKHR>() { return VK_STRUCTURE_TYPE_VIDEO_FORMAT_QUANTIZATION_MAP_PROPERTIES_KHR; }
+  template <> constexpr VkStructureType ResolveSType<const VkVideoFormatQuantizationMapPropertiesKHR>() { return VK_STRUCTURE_TYPE_VIDEO_FORMAT_QUANTIZATION_MAP_PROPERTIES_KHR; }
 
   template <> constexpr VkStructureType ResolveSType<VkVideoInlineQueryInfoKHR>() { return VK_STRUCTURE_TYPE_VIDEO_INLINE_QUERY_INFO_KHR; }
   template <> constexpr VkStructureType ResolveSType<const VkVideoInlineQueryInfoKHR>() { return VK_STRUCTURE_TYPE_VIDEO_INLINE_QUERY_INFO_KHR; }
@@ -24822,6 +24864,9 @@ namespace vkroots {
 
   template <> constexpr VkStructureType ResolveSType<VkVideoProfileListInfoKHR>() { return VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR; }
   template <> constexpr VkStructureType ResolveSType<const VkVideoProfileListInfoKHR>() { return VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR; }
+
+  template <> constexpr VkStructureType ResolveSType<VkVideoReferenceIntraRefreshInfoKHR>() { return VK_STRUCTURE_TYPE_VIDEO_REFERENCE_INTRA_REFRESH_INFO_KHR; }
+  template <> constexpr VkStructureType ResolveSType<const VkVideoReferenceIntraRefreshInfoKHR>() { return VK_STRUCTURE_TYPE_VIDEO_REFERENCE_INTRA_REFRESH_INFO_KHR; }
 
   template <> constexpr VkStructureType ResolveSType<VkVideoReferenceSlotInfoKHR>() { return VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR; }
   template <> constexpr VkStructureType ResolveSType<const VkVideoReferenceSlotInfoKHR>() { return VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR; }
@@ -24870,8 +24915,17 @@ namespace vkroots {
   template <> constexpr VkStructureType ResolveSType<VkWriteDescriptorSetInlineUniformBlock>() { return VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK; }
   template <> constexpr VkStructureType ResolveSType<const VkWriteDescriptorSetInlineUniformBlock>() { return VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK; }
 
+  template <> constexpr VkStructureType ResolveSType<VkWriteDescriptorSetPartitionedAccelerationStructureNV>() { return VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_PARTITIONED_ACCELERATION_STRUCTURE_NV; }
+  template <> constexpr VkStructureType ResolveSType<const VkWriteDescriptorSetPartitionedAccelerationStructureNV>() { return VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_PARTITIONED_ACCELERATION_STRUCTURE_NV; }
+
+  template <> constexpr VkStructureType ResolveSType<VkWriteDescriptorSetTensorARM>() { return VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_TENSOR_ARM; }
+  template <> constexpr VkStructureType ResolveSType<const VkWriteDescriptorSetTensorARM>() { return VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_TENSOR_ARM; }
+
   template <> constexpr VkStructureType ResolveSType<VkWriteIndirectExecutionSetPipelineEXT>() { return VK_STRUCTURE_TYPE_WRITE_INDIRECT_EXECUTION_SET_PIPELINE_EXT; }
   template <> constexpr VkStructureType ResolveSType<const VkWriteIndirectExecutionSetPipelineEXT>() { return VK_STRUCTURE_TYPE_WRITE_INDIRECT_EXECUTION_SET_PIPELINE_EXT; }
+
+  template <> constexpr VkStructureType ResolveSType<VkWriteIndirectExecutionSetShaderEXT>() { return VK_STRUCTURE_TYPE_WRITE_INDIRECT_EXECUTION_SET_SHADER_EXT; }
+  template <> constexpr VkStructureType ResolveSType<const VkWriteIndirectExecutionSetShaderEXT>() { return VK_STRUCTURE_TYPE_WRITE_INDIRECT_EXECUTION_SET_SHADER_EXT; }
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
   template <> constexpr VkStructureType ResolveSType<VkXcbSurfaceCreateInfoKHR>() { return VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR; }

@@ -3,6 +3,7 @@
 
 #include "vkroots.h"
 #include <vector>
+#include <memory>
 
 namespace WoTLKGuiLayer {
 
@@ -30,6 +31,17 @@ struct OverlayContext
     VkQueue graphicsQueue = VK_NULL_HANDLE;
     uint32_t graphicsQueueFamily = 0;
     std::vector<VkCommandBuffer> commandBuffers;
+    
+    // Ultralight HTML renderer (opaque pointer)
+    void* htmlRenderer = nullptr;
+    
+    // UI texture resources for Vulkan
+    VkImage uiImage = VK_NULL_HANDLE;
+    VkDeviceMemory uiImageMemory = VK_NULL_HANDLE;
+    VkImageView uiImageView = VK_NULL_HANDLE;
+    
+    uint32_t uiImageWidth = 0;
+    uint32_t uiImageHeight = 0;
 };
 
 extern OverlayContext gOverlay;
@@ -41,7 +53,7 @@ extern OverlayContext gOverlay;
 class VkInstanceOverrides {
 public:
     static VkResult CreateDevice(
-        const vkroots::VkDeviceDispatch& pDispatch, 
+        const vkroots::VkPhysicalDeviceDispatch& pDispatch, 
         VkPhysicalDevice physicalDevice, 
         const VkDeviceCreateInfo* pCreateInfo, 
         const VkAllocationCallbacks* pAllocator, 

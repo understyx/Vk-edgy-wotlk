@@ -1,27 +1,49 @@
 cmake_minimum_required(VERSION 3.10)
 project(VkLayerWoTLK)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Find Vulkan
-find_package(Vulkan REQUIRED)
+# Find Vulkan - if not found, we'll use headers from include directory
+find_package(Vulkan)
 
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${VULKAN_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/jshtml)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/jshtml/AppCore)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/jshtml/JavaScriptCore)
+
+if(Vulkan_FOUND)
+    include_directories(${VULKAN_INCLUDE_DIRS})
+else()
+    message(WARNING "Vulkan not found, assuming headers in system path")
+endif()
 
 # Source files
 set(VKLAYER_SOURCES
     src/main.cpp
     src/vklayer/vk_layer.cpp
+    src/jshtml/jshtml.cpp
+    src/jshtml/ultralight_manager.cpp
 )
 
 # Create the Vulkan layer shared library
 add_library(vklayer_understyx_wotlk SHARED ${VKLAYER_SOURCES})
 
-# Link Vulkan
-target_link_libraries(vklayer_understyx_wotlk PRIVATE ${VULKAN_LIBRARIES})
+# Link directories
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
+# Link Vulkan and Ultralight
+if(Vulkan_FOUND)
+    target_link_libraries(vklayer_understyx_wotlk PRIVATE ${VULKAN_LIBRARIES})
+endif()
+
+target_link_libraries(vklayer_understyx_wotlk PRIVATE 
+    Ultralight
+    UltralightCore
+    WebCore
+    AppCore
+)
 
 # Set compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -30,8 +52,16 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -Wextra
         -Wpedantic
         -fPIC
+        -fvisibility=hidden
+        -fpermissive
     )
 endif()
+
+# Set RPATH for runtime library loading
+set_target_properties(vklayer_understyx_wotlk PROPERTIES
+    BUILD_RPATH "${CMAKE_CURRENT_SOURCE_DIR}/lib"
+    INSTALL_RPATH "$ORIGIN/lib:$ORIGIN/../lib"
+)
 
 # Output library name
 set_target_properties(vklayer_understyx_wotlk PROPERTIES

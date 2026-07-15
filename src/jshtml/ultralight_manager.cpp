@@ -5,6 +5,7 @@
 
 #include "jshtml/ultralight_manager.h"
 #include <Ultralight/Ultralight.h>
+#include <Ultralight/platform/Platform.h>
 #include <cstring>
 #include <cstdio>
 
@@ -32,17 +33,20 @@ bool UltralightManager::Initialize(uint32_t width, uint32_t height, const std::s
     
     try {
         // Create Ultralight configuration
-        auto config = ultralight::Config::Create();
+        ultralight::Config config;
         
         if (!resourcePath.empty()) {
-            config->set_resource_path(ultralight::String(resourcePath.c_str()));
+            config.resource_path_prefix = ultralight::String(resourcePath.c_str());
         }
         
         // Set other configuration options as needed
-        config->set_cache_path(ultralight::String("./cache"));
+        config.cache_path = ultralight::String("./cache");
+        
+        // Set the config on the Platform singleton
+        ultralight::Platform::instance().set_config(config);
         
         // Create the renderer
-        mRenderer = ultralight::Renderer::Create(config);
+        mRenderer = ultralight::Renderer::Create();
         if (!mRenderer) {
             fprintf(stderr, "UltralightManager: Failed to create Ultralight renderer\n");
             return false;
@@ -50,7 +54,8 @@ bool UltralightManager::Initialize(uint32_t width, uint32_t height, const std::s
         
         // Create a view with the specified dimensions
         auto viewConfig = ultralight::ViewConfig();
-        mView = mRenderer->CreateView(mWidth, mHeight, viewConfig);
+        // Use the default session (nullptr)
+        mView = mRenderer->CreateView(mWidth, mHeight, viewConfig, nullptr);
         if (!mView) {
             fprintf(stderr, "UltralightManager: Failed to create Ultralight view\n");
             return false;
@@ -58,7 +63,7 @@ bool UltralightManager::Initialize(uint32_t width, uint32_t height, const std::s
         
         // Get the initial render target to create a bitmap
         auto renderTarget = mView->render_target();
-        if (renderTarget && renderTarget->texture_id == 0) {
+        if (!renderTarget.is_empty && renderTarget.texture_id == 0) {
             // Use offscreen rendering
             mView->set_needs_paint(true);
         }
@@ -187,14 +192,19 @@ bool UltralightManager::Render()
         
         // Get the render target
         auto renderTarget = mView->render_target();
-        if (!renderTarget) {
+        if (renderTarget.is_empty) {
             return false;
         }
         
-        // For offscreen rendering, get the bitmap
-        mBitmap = mView->bitmap();
+        // For CPU rendering, get the bitmap from the surface
+        auto surface = mView->surface();
+        if (surface) {
+            // Cast to BitmapSurface to get the bitmap
+            auto bitmapSurface = static_cast<ultralight::BitmapSurface*>(surface);
+            mBitmap = bitmapSurface->bitmap();
+        }
         
-        return mBitmap != nullptr;
+        return mBitmap.get() != nullptr;
     }
     catch (const std::exception& e) {
         fprintf(stderr, "UltralightManager: Render failed: %s\n", e.what());

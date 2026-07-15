@@ -5,6 +5,7 @@
 
 #include "jshtml/ultralight_manager.h"
 #include <Ultralight/Ultralight.h>
+#include <Ultralight/platform/Platform.h>
 #include <cstring>
 #include <cstdio>
 
@@ -62,7 +63,7 @@ bool UltralightManager::Initialize(uint32_t width, uint32_t height, const std::s
         
         // Get the initial render target to create a bitmap
         auto renderTarget = mView->render_target();
-        if (renderTarget && renderTarget->texture_id == 0) {
+        if (!renderTarget.is_empty && renderTarget.texture_id == 0) {
             // Use offscreen rendering
             mView->set_needs_paint(true);
         }
@@ -191,14 +192,19 @@ bool UltralightManager::Render()
         
         // Get the render target
         auto renderTarget = mView->render_target();
-        if (!renderTarget) {
+        if (renderTarget.is_empty) {
             return false;
         }
         
-        // For offscreen rendering, get the bitmap
-        mBitmap = mView->bitmap();
+        // For CPU rendering, get the bitmap from the surface
+        auto surface = mView->surface();
+        if (surface) {
+            // Cast to BitmapSurface to get the bitmap
+            auto bitmapSurface = static_cast<ultralight::BitmapSurface*>(surface);
+            mBitmap = bitmapSurface->bitmap();
+        }
         
-        return mBitmap != nullptr;
+        return mBitmap.get() != nullptr;
     }
     catch (const std::exception& e) {
         fprintf(stderr, "UltralightManager: Render failed: %s\n", e.what());

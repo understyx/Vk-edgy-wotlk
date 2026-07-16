@@ -5,32 +5,38 @@
 #include <vector>
 #include <memory>
 
+// Forward-declare OverlayUI so we don't pull all RmlUi headers into every TU
+namespace WoTLKGuiLayer {
+class OverlayUI;
+}
+
 namespace WoTLKGuiLayer {
 
 /**
  * @struct OverlayContext
- * @brief Holds all Vulkan resources needed for the overlay rendering
+ * @brief Holds all Vulkan resources and the RmlUi overlay manager.
  */
 struct OverlayContext
 {
-    VkDevice device = VK_NULL_HANDLE;
+    // Core Vulkan handles
+    VkDevice     device      = VK_NULL_HANDLE;
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+
+    // Stored dispatch pointer (stable – backed by vkroots' global ObjectMap)
+    const vkroots::VkDeviceDispatch* dispatch = nullptr;
 
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-    VkFormat format = VK_FORMAT_UNDEFINED;
-    VkExtent2D extent;
+    VkFormat       format    = VK_FORMAT_UNDEFINED;
+    VkExtent2D     extent    = {};
 
     std::vector<VkImage> images;
-    std::vector<VkImageView> imageViews;
-    std::vector<VkFramebuffer> framebuffers;
 
-    VkRenderPass renderPass = VK_NULL_HANDLE;
-    VkPipeline pipeline = VK_NULL_HANDLE;
-    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-
-    VkCommandPool commandPool = VK_NULL_HANDLE;
-    VkQueue graphicsQueue = VK_NULL_HANDLE;
+    VkQueue  graphicsQueue       = VK_NULL_HANDLE;
     uint32_t graphicsQueueFamily = 0;
-    std::vector<VkCommandBuffer> commandBuffers;
+
+    // RmlUi overlay (null until swapchain + queue are both available)
+    std::unique_ptr<OverlayUI> rmlOverlay;
+    bool rmlInitialized = false;
 };
 
 extern OverlayContext gOverlay;

@@ -1,0 +1,23 @@
+<rml>
+<head>
+    <title>WoTLK Overlay</title>
+    <link type="text/rcss" href="overlay.rcss"/>
+</head>
+<body>
+    <div id="overlay">
+        <h1>Game Status</h1>
+        <div class="stat">
+            <span class="label">FPS:</span>
+            <span class="value" id="fps">--</span>
+        </div>
+        <div class="stat">
+            <span class="label">Location:</span>
+            <span class="value" id="location">Unknown</span>
+        </div>
+        <div class="stat">
+            <span class="label">Players Online:</span>
+            <span class="value" id="players">0</span>
+        </div>
+    </div>
+</body>
+</rml>

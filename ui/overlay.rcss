@@ -1,0 +1,47 @@
+body
+{
+    margin: 0;
+    padding: 0;
+    font-family: LatoLatin;
+    font-size: 16px;
+    color: #ffffff;
+}
+
+#overlay
+{
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 280px;
+    background-color: rgba(10, 10, 25, 0.85);
+    border: 2px solid #00cc44;
+    border-radius: 8px;
+    padding: 14px 18px;
+}
+
+h1
+{
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    color: #00cc44;
+}
+
+.stat
+{
+    margin: 5px 0;
+    display: inline-block;
+    width: 100%;
+}
+
+.label
+{
+    color: #aaaaaa;
+    display: inline-block;
+    width: 120px;
+}
+
+.value
+{
+    color: #00cc44;
+    font-weight: bold;
+}

@@ -9741,6 +9741,7 @@ namespace vkroots {
 #endif
   template <typename InstanceOverrides, typename DeviceOverrides>
   static void wrap_GetExternalComputeQueueDataNV(VkExternalComputeQueueNV externalQueue, VkExternalComputeQueueDataParamsNV *params, void *pData) {
+    const VkExternalComputeQueueNVDispatch* dispatch = tables::ExternalComputeQueueDispatches.find(externalQueue);
     DeviceOverrides::GetExternalComputeQueueDataNV(*dispatch, externalQueue, params, pData);
   }
 

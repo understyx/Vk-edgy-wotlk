@@ -4,3 +4,5 @@ test_rb
 RingBufferTest_test
 *.o
 *.log
+build/
+libvklayer_understyx_wotlk.so

@@ -37,12 +37,13 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 if(Vulkan_FOUND)
     target_link_libraries(vklayer_understyx_wotlk PRIVATE ${VULKAN_LIBRARIES})
 endif()
+set(LIB_PATH "/home/stygian/programming/Vk-edgy-wotlk/lib")
 
 target_link_libraries(vklayer_understyx_wotlk PRIVATE 
-    Ultralight
-    UltralightCore
-    WebCore
-    AppCore
+    ${LIB_PATH}/libUltralight.so
+    ${LIB_PATH}/libUltralightCore.so
+    ${LIB_PATH}/libWebCore.so
+    ${LIB_PATH}/libAppCore.so
 )
 
 # Set compiler flags

@@ -18,7 +18,9 @@ UltralightManager::UltralightManager()
 
 UltralightManager::~UltralightManager()
 {
-    Shutdown();
+    // NOTE: Do not call Shutdown() here for the singleton instance
+    // The Vulkan layer needs the manager to persist until program exit
+    // and calling Shutdown() in the destructor can interfere with cleanup order
 }
 
 bool UltralightManager::Initialize(uint32_t width, uint32_t height, const std::string& resourcePath)

@@ -10,8 +10,14 @@
 
 namespace WoWHTML {
 
-// Global Ultralight manager instance
-static std::unique_ptr<UltralightManager> gUltralightManager = nullptr;
+// ============================================================================
+// Helper function to get the global Ultralight manager instance
+// Uses Meyer's singleton pattern to ensure proper initialization and lifetime
+// ============================================================================
+static UltralightManager* GetGlobalUltralightManager() {
+    static UltralightManager instance;
+    return &instance;
+}
 
 // ============================================================================
 // HTMLRenderer implementation
@@ -19,14 +25,12 @@ static std::unique_ptr<UltralightManager> gUltralightManager = nullptr;
 
 bool HTMLRenderer::Initialize(uint32_t width, uint32_t height)
 {
-    if (!gUltralightManager) {
-        gUltralightManager = std::make_unique<UltralightManager>();
-    }
+    UltralightManager* manager = GetGlobalUltralightManager();
     
     mWidth = width;
     mHeight = height;
     
-    if (!gUltralightManager->Initialize(width, height)) {
+    if (!manager->Initialize(width, height)) {
         fprintf(stderr, "HTMLRenderer: Failed to initialize Ultralight manager\n");
         return false;
     }
@@ -37,40 +41,30 @@ bool HTMLRenderer::Initialize(uint32_t width, uint32_t height)
 
 bool HTMLRenderer::LoadHTML(const std::string& htmlContent)
 {
-    if (!gUltralightManager) {
-        fprintf(stderr, "HTMLRenderer: Ultralight manager not initialized\n");
-        return false;
-    }
-    
-    return gUltralightManager->LoadHTML(htmlContent);
+    UltralightManager* manager = GetGlobalUltralightManager();
+    return manager->LoadHTML(htmlContent);
 }
 
 bool HTMLRenderer::UpdateGameState(const std::string& jsonData)
 {
-    if (!gUltralightManager) {
-        fprintf(stderr, "HTMLRenderer: Ultralight manager not initialized\n");
-        return false;
-    }
+    UltralightManager* manager = GetGlobalUltralightManager();
     
     // Queue the game state update for the rendering thread to process
-    gUltralightManager->QueueGameStateUpdate(jsonData);
+    manager->QueueGameStateUpdate(jsonData);
     return true;
 }
 
 uint64_t HTMLRenderer::RenderToTexture()
 {
-    if (!gUltralightManager) {
-        fprintf(stderr, "HTMLRenderer: Ultralight manager not initialized\n");
-        return 0;
-    }
+    UltralightManager* manager = GetGlobalUltralightManager();
     
-    if (!gUltralightManager->Render()) {
+    if (!manager->Render()) {
         fprintf(stderr, "HTMLRenderer: Failed to render\n");
         return 0;
     }
     
     uint32_t width, height;
-    const uint8_t* bitmapData = gUltralightManager->GetBitmapData(width, height);
+    const uint8_t* bitmapData = manager->GetBitmapData(width, height);
     
     if (!bitmapData) {
         fprintf(stderr, "HTMLRenderer: No bitmap data available\n");

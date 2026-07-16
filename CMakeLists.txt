@@ -9,9 +9,6 @@ find_package(Vulkan)
 
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/jshtml)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/jshtml/AppCore)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/jshtml/JavaScriptCore)
 
 if(Vulkan_FOUND)
     include_directories(${VULKAN_INCLUDE_DIRS})
@@ -23,28 +20,15 @@ endif()
 set(VKLAYER_SOURCES
     src/main.cpp
     src/vklayer/vk_layer.cpp
-    src/jshtml/jshtml.cpp
-    src/jshtml/ultralight_manager.cpp
 )
 
 # Create the Vulkan layer shared library
 add_library(vklayer_understyx_wotlk SHARED ${VKLAYER_SOURCES})
 
-# Link directories
-link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
-
-# Link Vulkan and Ultralight
+# Link Vulkan
 if(Vulkan_FOUND)
     target_link_libraries(vklayer_understyx_wotlk PRIVATE ${VULKAN_LIBRARIES})
 endif()
-set(LIB_PATH "/home/stygian/programming/Vk-edgy-wotlk/lib")
-
-target_link_libraries(vklayer_understyx_wotlk PRIVATE 
-    ${LIB_PATH}/libUltralight.so
-    ${LIB_PATH}/libUltralightCore.so
-    ${LIB_PATH}/libWebCore.so
-    ${LIB_PATH}/libAppCore.so
-)
 
 # Set compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -57,12 +41,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -fpermissive
     )
 endif()
-
-# Set RPATH for runtime library loading
-set_target_properties(vklayer_understyx_wotlk PROPERTIES
-    BUILD_RPATH "${CMAKE_CURRENT_SOURCE_DIR}/lib"
-    INSTALL_RPATH "$ORIGIN/lib:$ORIGIN/../lib"
-)
 
 # Output library name
 set_target_properties(vklayer_understyx_wotlk PROPERTIES

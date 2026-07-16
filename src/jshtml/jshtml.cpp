@@ -11,7 +11,10 @@
 namespace WoWHTML {
 
 // Global Ultralight manager instance
-static std::unique_ptr<UltralightManager> gUltralightManager = nullptr;
+// NOTE: Using raw pointer instead of unique_ptr to prevent automatic cleanup
+// The manager needs to persist for the lifetime of the layer, not get destroyed
+// when static destructors run (which can happen prematurely during library unload)
+static UltralightManager* gUltralightManager = nullptr;
 
 // ============================================================================
 // HTMLRenderer implementation
@@ -20,7 +23,7 @@ static std::unique_ptr<UltralightManager> gUltralightManager = nullptr;
 bool HTMLRenderer::Initialize(uint32_t width, uint32_t height)
 {
     if (!gUltralightManager) {
-        gUltralightManager = std::make_unique<UltralightManager>();
+        gUltralightManager = new UltralightManager();
     }
     
     mWidth = width;

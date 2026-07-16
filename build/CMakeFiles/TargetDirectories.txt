@@ -1,7 +1,0 @@
-/home/runner/work/Vk-edgy-wotlk/Vk-edgy-wotlk/build/CMakeFiles/vklayer_understyx_wotlk.dir
-/home/runner/work/Vk-edgy-wotlk/Vk-edgy-wotlk/build/CMakeFiles/edit_cache.dir
-/home/runner/work/Vk-edgy-wotlk/Vk-edgy-wotlk/build/CMakeFiles/rebuild_cache.dir
-/home/runner/work/Vk-edgy-wotlk/Vk-edgy-wotlk/build/CMakeFiles/list_install_components.dir
-/home/runner/work/Vk-edgy-wotlk/Vk-edgy-wotlk/build/CMakeFiles/install.dir
-/home/runner/work/Vk-edgy-wotlk/Vk-edgy-wotlk/build/CMakeFiles/install/local.dir
-/home/runner/work/Vk-edgy-wotlk/Vk-edgy-wotlk/build/CMakeFiles/install/strip.dir

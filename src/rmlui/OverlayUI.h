@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "SystemInterface.h"
 #include "FileInterface.h"
 #include "VulkanRenderer.h"

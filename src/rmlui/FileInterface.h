@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <RmlUi/Core/FileInterface.h>
 #include <string>
 

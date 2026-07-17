@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <RmlUi/Core/RenderInterface.h>
 #include <vulkan/vulkan.h>
 #include "vkroots.h"

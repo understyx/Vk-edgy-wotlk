@@ -89,10 +89,6 @@ void OverlayUI::Shutdown()
 
     Rml::Shutdown();
 
-#ifdef RMLUI_LUA_BINDINGS
-    Rml::Lua::Shutdown();
-#endif
-
     DestroySyncObjects();
     DestroySwapchainResources();
 

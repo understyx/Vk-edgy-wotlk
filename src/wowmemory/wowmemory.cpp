@@ -14,12 +14,46 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <unistd.h>
+#include <sys/mman.h>
 
 namespace WoWMemory {
 
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+
+/// Safely check if a memory range is mapped and readable.
+static bool IsReadableRange(uintptr_t addr, size_t size)
+{
+    if (size == 0) return true;
+    static const long page_size = sysconf(_SC_PAGESIZE);
+
+    uintptr_t start = addr;
+    uintptr_t end = start + size;
+
+    uintptr_t first_page = start & ~(page_size - 1);
+    uintptr_t last_page = (end - 1) & ~(page_size - 1);
+
+    // 1-entry thread_local cache to avoid redundant mincore system calls.
+    thread_local uintptr_t s_last_page = 0;
+    thread_local bool s_last_readable = false;
+
+    for (uintptr_t p = first_page; p <= last_page; p += page_size) {
+        if (p == s_last_page) {
+            if (!s_last_readable) return false;
+            continue;
+        }
+
+        unsigned char vec;
+        bool readable = (mincore(reinterpret_cast<void*>(p), page_size, &vec) == 0);
+        s_last_page = p;
+        s_last_readable = readable;
+
+        if (!readable) return false;
+    }
+    return true;
+}
 
 /// Safely cast an absolute 32-bit address to a typed pointer.
 template<typename T>
@@ -29,9 +63,48 @@ static const T* AbsPtr(uint32_t addr)
 }
 
 template<typename T>
-static T ReadAbs(uint32_t addr)
+static T ReadAbs(uint32_t addr, T fallback = T{})
 {
+    if (!IsReadableRange(static_cast<uintptr_t>(addr), sizeof(T))) {
+        return fallback;
+    }
     return *AbsPtr<T>(addr);
+}
+
+/// Safely read a string up to maxLen, checking each page's readability first.
+static std::string ReadSafeString(uintptr_t startAddr, size_t maxLen)
+{
+    if (!startAddr) return {};
+    static const long page_size = sysconf(_SC_PAGESIZE);
+
+    uintptr_t current = startAddr;
+    size_t len = 0;
+
+    uintptr_t current_page = 0;
+    bool current_page_readable = false;
+
+    while (len < maxLen) {
+        uintptr_t page = current & ~(page_size - 1);
+        if (page != current_page) {
+            current_page = page;
+            current_page_readable = IsReadableRange(current_page, page_size);
+        }
+
+        if (!current_page_readable) {
+            break;
+        }
+
+        const char* p = reinterpret_cast<const char*>(current);
+        if (*p == '\0') {
+            break;
+        }
+
+        current++;
+        len++;
+    }
+
+    if (len == 0) return {};
+    return std::string(reinterpret_cast<const char*>(startAddr), len);
 }
 
 // ---------------------------------------------------------------------------
@@ -40,23 +113,15 @@ static T ReadAbs(uint32_t addr)
 
 std::string GameDataReader::ReadInlineString(uint32_t absAddr, size_t maxLen)
 {
-    if (!absAddr) return {};
-    const char* p = AbsPtr<char>(absAddr);
-    if (!p) return {};
-    // strnlen guards against missing null terminator
-    size_t len = ::strnlen(p, maxLen);
-    return std::string(p, len);
+    return ReadSafeString(static_cast<uintptr_t>(absAddr), maxLen);
 }
 
 std::string GameDataReader::ReadIndirectString(uint32_t ptrAddr, size_t maxLen)
 {
     if (!ptrAddr) return {};
-    // Read the pointer stored at ptrAddr
     uintptr_t strPtr = ReadAbs<uintptr_t>(ptrAddr);
     if (!strPtr) return {};
-    const char* p = reinterpret_cast<const char*>(strPtr);
-    size_t len = ::strnlen(p, maxLen);
-    return std::string(p, len);
+    return ReadSafeString(strPtr, maxLen);
 }
 
 // ---------------------------------------------------------------------------
@@ -91,11 +156,10 @@ bool GameDataReader::ReadGameData(GameData& out)
 
     // playerHealth lives at playerBase_ptr + 0x19B8.
     // The null check on playerBasePtr guards the most common failure mode
-    // (not ingame / object manager not ready).  Further VA-range validation
-    // is not feasible without platform SEH / signal handling; the caller
-    // (running inside the WoW process) accepts the same risk as any bot/hook.
+    // (not ingame / object manager not ready). Further VA-range validation
+    // is performed safely using our IsReadableRange check.
     uintptr_t playerBasePtr = ReadAbs<uintptr_t>(WoWOffsets::playerBase);
-    if (playerBasePtr) {
+    if (playerBasePtr && IsReadableRange(playerBasePtr + WoWOffsets::playerHealth, sizeof(uint32_t))) {
         out.playerHealth = *reinterpret_cast<const uint32_t*>(
             playerBasePtr + WoWOffsets::playerHealth);
     } else {

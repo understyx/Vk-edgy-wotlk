@@ -164,8 +164,8 @@ if(SPV_COMPILER)
     install(FILES ${VERT_SPV} ${FRAG_SPV} DESTINATION lib/shaders)
 endif()
 
-# Install UI documents
-install(FILES ui/overlay.rml ui/overlay.rcss DESTINATION lib/ui)
+# Install UI documents and fonts
+install(DIRECTORY ui/ DESTINATION lib/ui)
 
 # ===========================================================================
 # Deploy built artifacts to local dist directory
@@ -181,10 +181,8 @@ add_custom_command(TARGET vklayer_understyx_wotlk POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:vklayer_understyx_wotlk> ${DIST_DIR}/
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/VkLayer_understyx_WOTLK.json ${DIST_DIR}/
 
-    # Copy UI files
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/ui/overlay.rml ${DIST_DIR}/ui/
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/ui/overlay.rcss ${DIST_DIR}/ui/
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/ui/overlay.html ${DIST_DIR}/ui/
+    # Copy UI directory completely (including fonts)
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/ui ${DIST_DIR}/ui
 
     # Copy RmlUi libraries
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:rmlui_core> ${DIST_DIR}/

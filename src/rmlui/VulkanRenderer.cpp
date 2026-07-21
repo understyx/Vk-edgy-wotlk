@@ -29,12 +29,13 @@ static std::vector<char> LoadSpv(const std::string& path)
 /// Build a column-major 2-D orthographic projection for Vulkan NDC.
 static void OrthoProjection(float w, float h, float out[16])
 {
-    // Maps x ∈ [0,w] → [-1,1], y ∈ [0,h] → [-1,1] (y flipped for Vulkan).
+    // Maps x ∈ [0,w] → [-1,1], y ∈ [0,h] → [-1,1].
+    // For Vulkan, Y-axis points downwards, so y=0 is top (-1), y=h is bottom (1).
     const float m[16] = {
         2.f / w,  0,        0,  0,
-        0,       -2.f / h,  0,  0,
+        0,        2.f / h,  0,  0,
         0,        0,        1,  0,
-       -1,        1,        0,  1,
+       -1,       -1,        0,  1,
     };
     memcpy(out, m, 64);
 }
@@ -545,14 +546,18 @@ void VulkanRenderer::SetScissorRegion(Rml::Rectanglei region)
 
 void VulkanRenderer::SetTransform(const Rml::Matrix4f* transform)
 {
+    float proj_m[16];
+    OrthoProjection(static_cast<float>(m_swapchainExtent.width),
+                    static_cast<float>(m_swapchainExtent.height),
+                    proj_m);
+
     if (transform) {
-        // RmlUi provides a pre-multiplied transform (including projection).
-        memcpy(m_push.transform, transform->data(), 64);
+        Rml::Matrix4f projection = Rml::Matrix4f::FromColumnMajor(proj_m);
+        Rml::Matrix4f combined = projection * (*transform);
+        memcpy(m_push.transform, combined.data(), 64);
     } else {
         // Restore the default orthographic projection
-        OrthoProjection(static_cast<float>(m_swapchainExtent.width),
-                        static_cast<float>(m_swapchainExtent.height),
-                        m_push.transform);
+        memcpy(m_push.transform, proj_m, 64);
     }
 }
 

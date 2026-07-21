@@ -3,20 +3,32 @@
     <title>WoTLK Overlay</title>
     <link type="text/rcss" href="overlay.rcss"/>
 </head>
-<body>
+<body data-model="wow">
     <div id="overlay">
         <h1>Game Status</h1>
         <div class="stat">
-            <span class="label">FPS:</span>
-            <span class="value" id="fps">--</span>
+            <span class="label">Player:</span>
+            <span class="value" data-value="playerName">--</span>
         </div>
         <div class="stat">
-            <span class="label">Location:</span>
-            <span class="value" id="location">Unknown</span>
+            <span class="label">Realm:</span>
+            <span class="value" data-value="realmName">--</span>
         </div>
         <div class="stat">
-            <span class="label">Players Online:</span>
-            <span class="value" id="players">0</span>
+            <span class="label">Zone:</span>
+            <span class="value" data-value="zoneText">--</span>
+        </div>
+        <div class="stat">
+            <span class="label">Sub-Zone:</span>
+            <span class="value" data-value="subZoneText">--</span>
+        </div>
+        <div class="stat">
+            <span class="label">Map ID:</span>
+            <span class="value" data-value="mapID">0</span>
+        </div>
+        <div class="stat">
+            <span class="label">Health:</span>
+            <span class="value" data-value="playerHealth">0</span>
         </div>
     </div>
 </body>

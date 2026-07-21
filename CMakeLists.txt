@@ -39,6 +39,16 @@ set(BUILD_SAMPLES          OFF     CACHE BOOL   "" FORCE)
 set(BUILD_TESTING          OFF     CACHE BOOL   "" FORCE)
 set(RMLUI_THIRDPARTY_CONTAINERS ON CACHE BOOL   "" FORCE)
 
+# Enable Lua bindings if a Lua installation is found
+find_package(Lua QUIET)
+if(LUA_FOUND)
+    message(STATUS "  Lua found (${LUA_VERSION_STRING}) – enabling RmlUi Lua bindings")
+    set(RMLUI_LUA_BINDINGS ON CACHE BOOL "" FORCE)
+else()
+    message(STATUS "  Lua not found – RmlUi Lua bindings disabled")
+    set(RMLUI_LUA_BINDINGS OFF CACHE BOOL "" FORCE)
+endif()
+
 FetchContent_MakeAvailable(RmlUi)
 
 # ===========================================================================
@@ -91,6 +101,8 @@ set(VKLAYER_SOURCES
     src/rmlui/FileInterface.cpp
     src/rmlui/VulkanRenderer.cpp
     src/rmlui/OverlayUI.cpp
+    src/rmlui/WowDataModel.cpp
+    src/wowmemory/wowmemory.cpp
 )
 
 add_library(vklayer_understyx_wotlk SHARED ${VKLAYER_SOURCES})
@@ -105,13 +117,22 @@ target_link_libraries(vklayer_understyx_wotlk
         RmlUi::Core
         dl
         $<$<BOOL:${Vulkan_FOUND}>:${VULKAN_LIBRARIES}>
+        $<$<BOOL:${LUA_FOUND}>:RmlUi::Lua>
+        $<$<BOOL:${LUA_FOUND}>:${LUA_LIBRARIES}>
 )
 
 target_include_directories(vklayer_understyx_wotlk
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        $<$<BOOL:${LUA_FOUND}>:${LUA_INCLUDE_DIR}>
 )
+
+# Propagate RMLUI_LUA_BINDINGS define so OverlayUI.cpp can conditionally
+# include the Lua headers.
+if(LUA_FOUND)
+    target_compile_definitions(vklayer_understyx_wotlk PRIVATE RMLUI_LUA_BINDINGS)
+endif()
 
 # ===========================================================================
 # Compiler flags

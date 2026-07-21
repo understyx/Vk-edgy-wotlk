@@ -1,6 +1,15 @@
 #include "OverlayUI.h"
+#include "wowmemory/offsets.h"
 #include <cstdio>
 #include <cstring>
+
+#ifdef RMLUI_LUA_BINDINGS
+#include <RmlUi/Lua.h>
+extern "C" {
+#include <lua.h>
+#include <lauxlib.h>
+}
+#endif
 
 namespace WoTLKGuiLayer {
 
@@ -46,6 +55,10 @@ bool OverlayUI::Initialize(const InitInfo& info)
         return false;
     }
 
+#ifdef RMLUI_LUA_BINDINGS
+    Rml::Lua::Initialise();
+#endif
+
     // Load default font (optional; overlay will render without text if unavailable)
     if (!info.fontPath.empty()) {
         if (!Rml::LoadFontFace(info.fontPath)) {
@@ -69,11 +82,16 @@ void OverlayUI::Shutdown()
         m_document = nullptr;
     }
     if (m_context) {
+        m_dataModel.Shutdown();
         Rml::RemoveContext(m_context->GetName());
         m_context = nullptr;
     }
 
     Rml::Shutdown();
+
+#ifdef RMLUI_LUA_BINDINGS
+    Rml::Lua::Shutdown();
+#endif
 
     DestroySyncObjects();
     DestroySwapchainResources();
@@ -107,6 +125,7 @@ void OverlayUI::ResizeSwapchain(const std::vector<VkImage>& images,
         m_document = nullptr;
     }
     if (m_context) {
+        m_dataModel.Shutdown();
         Rml::RemoveContext(m_context->GetName());
         m_context = nullptr;
     }
@@ -118,6 +137,13 @@ void OverlayUI::ResizeSwapchain(const std::vector<VkImage>& images,
         fprintf(stderr, "[RmlUi] Failed to create RmlUi context\n");
         return;
     }
+
+    // Initialise the WoW data model so HTML documents can bind to it
+    m_dataModel.Initialise(m_context);
+
+#ifdef RMLUI_LUA_BINDINGS
+    RegisterLuaGlobals();
+#endif
 
     // Load the overlay document
     m_document = m_context->LoadDocument("overlay.rml");
@@ -145,6 +171,195 @@ void OverlayUI::DestroySwapchainResources()
 // Per-frame render
 // ============================================================================
 
+void OverlayUI::UpdateGameData()
+{
+    if (!m_ready || !m_context) return;
+
+    WoWMemory::GameData snapshot;
+    if (m_gameReader.ReadGameData(snapshot))
+        m_dataModel.Update(snapshot);
+
+#ifdef RMLUI_LUA_BINDINGS
+    // Refresh the `wow` Lua global table with the latest snapshot values.
+    // lua_getglobal always pushes exactly one value; we must pop it in both
+    // branches to keep the stack balanced.
+    lua_State* L = Rml::Lua::Interpreter::GetLuaState();
+    if (L) {
+        int type = lua_getglobal(L, "wow");
+        if (type == LUA_TTABLE) {
+            lua_pushstring(L, snapshot.playerName.c_str());
+            lua_setfield(L, -2, "playerName");
+            lua_pushstring(L, snapshot.realmName.c_str());
+            lua_setfield(L, -2, "realmName");
+            lua_pushstring(L, snapshot.zoneText.c_str());
+            lua_setfield(L, -2, "zoneText");
+            lua_pushstring(L, snapshot.subZoneText.c_str());
+            lua_setfield(L, -2, "subZoneText");
+            lua_pushstring(L, snapshot.continentName.c_str());
+            lua_setfield(L, -2, "continentName");
+            lua_pushinteger(L, static_cast<lua_Integer>(snapshot.mapID));
+            lua_setfield(L, -2, "mapID");
+            lua_pushinteger(L, static_cast<lua_Integer>(snapshot.zoneID));
+            lua_setfield(L, -2, "zoneID");
+            lua_pushinteger(L, static_cast<lua_Integer>(snapshot.playerHealth));
+            lua_setfield(L, -2, "playerHealth");
+            lua_pushboolean(L, snapshot.playerIsIngame ? 1 : 0);
+            lua_setfield(L, -2, "playerIsIngame");
+            lua_pushboolean(L, snapshot.worldLoaded ? 1 : 0);
+            lua_setfield(L, -2, "worldLoaded");
+            lua_pushboolean(L, snapshot.isLoading ? 1 : 0);
+            lua_setfield(L, -2, "isLoading");
+            lua_pushboolean(L, snapshot.isIndoor ? 1 : 0);
+            lua_setfield(L, -2, "isIndoor");
+            lua_pushinteger(L, static_cast<lua_Integer>(snapshot.gameState));
+            lua_setfield(L, -2, "gameState");
+            lua_pushinteger(L, static_cast<lua_Integer>(snapshot.tickCount));
+            lua_setfield(L, -2, "tickCount");
+            lua_pushnumber(L, static_cast<lua_Number>(snapshot.corpseX));
+            lua_setfield(L, -2, "corpseX");
+            lua_pushnumber(L, static_cast<lua_Number>(snapshot.corpseY));
+            lua_setfield(L, -2, "corpseY");
+            lua_pushnumber(L, static_cast<lua_Number>(snapshot.corpseZ));
+            lua_setfield(L, -2, "corpseZ");
+        }
+        // Pop the value pushed by lua_getglobal (table or otherwise)
+        lua_pop(L, 1);
+    }
+#endif
+}
+
+#ifdef RMLUI_LUA_BINDINGS
+void OverlayUI::RegisterLuaGlobals()
+{
+    lua_State* L = Rml::Lua::Interpreter::GetLuaState();
+    if (!L) return;
+
+    // ---- wow (live game data) ----
+    lua_newtable(L);
+    // Seed with empty/zero values; UpdateGameData() fills them each frame.
+    const char* strFields[] = {
+        "playerName", "realmName", "zoneText", "subZoneText", "continentName", nullptr
+    };
+    for (int i = 0; strFields[i]; ++i) {
+        lua_pushstring(L, "");
+        lua_setfield(L, -2, strFields[i]);
+    }
+    const char* intFields[] = {
+        "mapID", "zoneID", "playerHealth", "gameState", "tickCount", nullptr
+    };
+    for (int i = 0; intFields[i]; ++i) {
+        lua_pushinteger(L, 0);
+        lua_setfield(L, -2, intFields[i]);
+    }
+    const char* boolFields[] = {
+        "playerIsIngame", "worldLoaded", "isLoading", "isIndoor", nullptr
+    };
+    for (int i = 0; boolFields[i]; ++i) {
+        lua_pushboolean(L, 0);
+        lua_setfield(L, -2, boolFields[i]);
+    }
+    const char* numFields[] = { "corpseX", "corpseY", "corpseZ", nullptr };
+    for (int i = 0; numFields[i]; ++i) {
+        lua_pushnumber(L, 0.0);
+        lua_setfield(L, -2, numFields[i]);
+    }
+    lua_setglobal(L, "wow");
+
+    // ---- wow_offsets (raw address constants) ----
+    lua_newtable(L);
+
+#define PUSH_OFFSET(name) \
+    lua_pushinteger(L, static_cast<lua_Integer>(WoWOffsets::name)); \
+    lua_setfield(L, -2, #name)
+
+    PUSH_OFFSET(arenaPlayer1);
+    PUSH_OFFSET(arenaPlayer2);
+    PUSH_OFFSET(arenaPlayer3);
+    PUSH_OFFSET(arenaPlayer4);
+    PUSH_OFFSET(arenaPlayer5);
+    PUSH_OFFSET(battlegroundStatus);
+    PUSH_OFFSET(characterSlotSelected);
+    PUSH_OFFSET(clientGameUITarget);
+    PUSH_OFFSET(continentName);
+    PUSH_OFFSET(corpseX);
+    PUSH_OFFSET(corpseY);
+    PUSH_OFFSET(corpseZ);
+    PUSH_OFFSET(ctmABase);
+    PUSH_OFFSET(ctmAction);
+    PUSH_OFFSET(ctmDistance);
+    PUSH_OFFSET(ctmGUID);
+    PUSH_OFFSET(ctmX);
+    PUSH_OFFSET(ctmY);
+    PUSH_OFFSET(ctmZ);
+    PUSH_OFFSET(currentClientConnection);
+    PUSH_OFFSET(currentManagerLocalGUID);
+    PUSH_OFFSET(currentManagerOffset);
+    PUSH_OFFSET(devicePtr1);
+    PUSH_OFFSET(devicePtr2);
+    PUSH_OFFSET(dynamicObjectBytes);
+    PUSH_OFFSET(dynamicObjectCaster);
+    PUSH_OFFSET(dynamicObjectCastTime);
+    PUSH_OFFSET(dynamicObjectRadius);
+    PUSH_OFFSET(dynamicObjectSpellID);
+    PUSH_OFFSET(endScene);
+    PUSH_OFFSET(firstObjectOffset);
+    PUSH_OFFSET(gameobjectGUIDOffset);
+    PUSH_OFFSET(gameobjectTypeOffset);
+    PUSH_OFFSET(gameState);
+    PUSH_OFFSET(isBattlegroundOver);
+    PUSH_OFFSET(isLoading);
+    PUSH_OFFSET(isIndoor);
+    PUSH_OFFSET(localComboPoint);
+    PUSH_OFFSET(localLastTarget);
+    PUSH_OFFSET(localLootWindowOpen);
+    PUSH_OFFSET(localMouseoverGUID);
+    PUSH_OFFSET(localPlayerCharacterState);
+    PUSH_OFFSET(localPlayerGUID);
+    PUSH_OFFSET(localTargetGUID);
+    PUSH_OFFSET(luaDoString);
+    PUSH_OFFSET(luaGetLocalizedText);
+    PUSH_OFFSET(mapID);
+    PUSH_OFFSET(nameBase);
+    PUSH_OFFSET(nameMask);
+    PUSH_OFFSET(nameStore);
+    PUSH_OFFSET(nameString);
+    PUSH_OFFSET(nextObjectOffset);
+    PUSH_OFFSET(partyLeader);
+    PUSH_OFFSET(partyPlayer1);
+    PUSH_OFFSET(partyPlayer2);
+    PUSH_OFFSET(partyPlayer3);
+    PUSH_OFFSET(partyPlayer4);
+    PUSH_OFFSET(petGUID);
+    PUSH_OFFSET(playerBase);
+    PUSH_OFFSET(playerCorpseX);
+    PUSH_OFFSET(playerCorpseY);
+    PUSH_OFFSET(playerCorpseZ);
+    PUSH_OFFSET(playerHealth);
+    PUSH_OFFSET(playerIsIngame);
+    PUSH_OFFSET(playerIsLoadingscreen);
+    PUSH_OFFSET(playerName);
+    PUSH_OFFSET(realmName);
+    PUSH_OFFSET(sendMovementPacket);
+    PUSH_OFFSET(setFacing);
+    PUSH_OFFSET(staticCastingstate);
+    PUSH_OFFSET(subZoneText);
+    PUSH_OFFSET(tickCount);
+    PUSH_OFFSET(timestamp);
+    PUSH_OFFSET(worldLoaded);
+    PUSH_OFFSET(wowChat);
+    PUSH_OFFSET(wowChatNextMsg);
+    PUSH_OFFSET(zoneID);
+    PUSH_OFFSET(zoneText);
+    PUSH_OFFSET(zoneNamePointer);
+
+#undef PUSH_OFFSET
+
+    lua_setglobal(L, "wow_offsets");
+
+    fprintf(stdout, "[WoTLKLayer] Lua globals 'wow' and 'wow_offsets' registered\n");
+}
+#endif
+
 VkSemaphore OverlayUI::Render(VkQueue                         queue,
                                uint32_t                        imageIndex,
                                const std::vector<VkSemaphore>& waitSems)
@@ -160,6 +375,7 @@ VkSemaphore OverlayUI::Render(VkQueue                         queue,
     m_dispatch->ResetFences(m_device, 1, &fence);
 
     // Update RmlUi (runs layout, animations, etc.)
+    UpdateGameData();
     m_context->Update();
 
     // Prepare the Vulkan command buffer for this image

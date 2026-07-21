@@ -4,14 +4,21 @@
 #include "SystemInterface.h"
 #include "FileInterface.h"
 #include "VulkanRenderer.h"
+#include "WowDataModel.h"
 
 #include <RmlUi/Core.h>
 #include <vulkan/vulkan.h>
 #include "vkroots.h"
 
+#include "wowmemory/wowmemory.h"
+
 #include <memory>
 #include <string>
 #include <vector>
+
+#ifdef RMLUI_LUA_BINDINGS
+#include <RmlUi/Lua.h>
+#endif
 
 namespace WoTLKGuiLayer {
 
@@ -67,15 +74,29 @@ public:
 
     bool IsReady() const { return m_ready; }
 
+    /**
+     * Read live WoW memory and push updated values into the RmlUi data model.
+     * Must be called before Render() each frame while the context is active.
+     */
+    void UpdateGameData();
+
 private:
     VkResult CreateSyncObjects(uint32_t imageCount);
     void     DestroySyncObjects();
+
+#ifdef RMLUI_LUA_BINDINGS
+    /// Register `wow` and `wow_offsets` Lua globals after context creation.
+    void RegisterLuaGlobals();
+#endif
 
     bool m_ready = false;
 
     std::unique_ptr<RmlSystemInterface> m_sysInterface;
     std::unique_ptr<RmlFileInterface>   m_fileInterface;
     std::unique_ptr<VulkanRenderer>     m_renderer;
+
+    WowDataModel                 m_dataModel;
+    WoWMemory::GameDataReader    m_gameReader;
 
     Rml::Context*        m_context  = nullptr;
     Rml::ElementDocument* m_document = nullptr;

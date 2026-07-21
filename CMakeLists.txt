@@ -141,6 +141,40 @@ endif()
 install(FILES ui/overlay.rml ui/overlay.rcss DESTINATION lib/ui)
 
 # ===========================================================================
+# Deploy built artifacts to local dist directory
+# ===========================================================================
+set(DIST_DIR ${CMAKE_CURRENT_BINARY_DIR}/dist)
+
+add_custom_command(TARGET vklayer_understyx_wotlk POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DIST_DIR}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DIST_DIR}/ui
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DIST_DIR}/shaders
+
+    # Copy library and json manifest
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:vklayer_understyx_wotlk> ${DIST_DIR}/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/VkLayer_understyx_WOTLK.json ${DIST_DIR}/
+
+    # Copy UI files
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/ui/overlay.rml ${DIST_DIR}/ui/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/ui/overlay.rcss ${DIST_DIR}/ui/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/ui/overlay.html ${DIST_DIR}/ui/
+
+    # Copy RmlUi libraries
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:rmlui_core> ${DIST_DIR}/
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:rmlui_debugger> ${DIST_DIR}/
+
+    COMMENT "Deploying built layer and assets to ${DIST_DIR}..."
+)
+
+# Conditionally copy compiled shaders
+if(SPV_COMPILER)
+    add_custom_command(TARGET vklayer_understyx_wotlk POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy ${VERT_SPV} ${FRAG_SPV} ${DIST_DIR}/shaders/
+        COMMENT "Deploying shaders to ${DIST_DIR}/shaders/..."
+    )
+endif()
+
+# ===========================================================================
 # Status
 # ===========================================================================
 message(STATUS "WoTLK Vulkan Layer Configuration")

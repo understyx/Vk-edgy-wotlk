@@ -59,10 +59,22 @@ bool OverlayUI::Initialize(const InitInfo& info)
     Rml::Lua::Initialise();
 #endif
 
-    // Load default font (optional; overlay will render without text if unavailable)
-    if (!info.fontPath.empty()) {
+    // Load custom fonts from the project's fonts directory (trying both with and without "ui/" prefix for robustness)
+    bool loaded_font = Rml::LoadFontFace("fonts/DejaVuSans.ttf") ||
+                       Rml::LoadFontFace("ui/fonts/DejaVuSans.ttf");
+    if (!loaded_font) {
+        fprintf(stderr, "[RmlUi] Warning: could not load local font DejaVuSans.ttf\n");
+    }
+    bool loaded_bold_font = Rml::LoadFontFace("fonts/DejaVuSans-Bold.ttf") ||
+                            Rml::LoadFontFace("ui/fonts/DejaVuSans-Bold.ttf");
+    if (!loaded_bold_font) {
+        fprintf(stderr, "[RmlUi] Warning: could not load local font DejaVuSans-Bold.ttf\n");
+    }
+
+    // Fallback to default system font if the local fonts could not be loaded
+    if (!loaded_font && !info.fontPath.empty()) {
         if (!Rml::LoadFontFace(info.fontPath)) {
-            fprintf(stderr, "[RmlUi] Warning: could not load font %s\n",
+            fprintf(stderr, "[RmlUi] Warning: could not load fallback font %s\n",
                     info.fontPath.c_str());
         }
     }

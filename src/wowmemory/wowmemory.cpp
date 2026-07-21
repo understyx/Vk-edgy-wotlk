@@ -119,7 +119,7 @@ std::string GameDataReader::ReadInlineString(uint32_t absAddr, size_t maxLen)
 std::string GameDataReader::ReadIndirectString(uint32_t ptrAddr, size_t maxLen)
 {
     if (!ptrAddr) return {};
-    uintptr_t strPtr = ReadAbs<uintptr_t>(ptrAddr);
+    uintptr_t strPtr = ReadAbs<uint32_t>(ptrAddr);
     if (!strPtr) return {};
     return ReadSafeString(strPtr, maxLen);
 }
@@ -158,7 +158,7 @@ bool GameDataReader::ReadGameData(GameData& out)
     // The null check on playerBasePtr guards the most common failure mode
     // (not ingame / object manager not ready). Further VA-range validation
     // is performed safely using our IsReadableRange check.
-    uintptr_t playerBasePtr = ReadAbs<uintptr_t>(WoWOffsets::playerBase);
+    uintptr_t playerBasePtr = ReadAbs<uint32_t>(WoWOffsets::playerBase);
     if (playerBasePtr && IsReadableRange(playerBasePtr + WoWOffsets::playerHealth, sizeof(uint32_t))) {
         out.playerHealth = *reinterpret_cast<const uint32_t*>(
             playerBasePtr + WoWOffsets::playerHealth);

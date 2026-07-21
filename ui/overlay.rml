@@ -8,31 +8,31 @@
         <h1>Game Status</h1>
         <div class="stat">
             <span class="label">Player:</span>
-            <span class="value" data-value="playerName">--</span>
+            <span class="value">{{playerName}}</span>
         </div>
         <div class="stat">
             <span class="label">Realm:</span>
-            <span class="value" data-value="realmName">--</span>
+            <span class="value">{{realmName}}</span>
         </div>
         <div class="stat">
             <span class="label">Zone:</span>
-            <span class="value" data-value="zoneText">--</span>
+            <span class="value">{{zoneText}}</span>
         </div>
         <div class="stat">
             <span class="label">Sub-Zone:</span>
-            <span class="value" data-value="subZoneText">--</span>
+            <span class="value">{{subZoneText}}</span>
         </div>
         <div class="stat">
             <span class="label">Map ID:</span>
-            <span class="value" data-value="mapID">0</span>
+            <span class="value">{{mapID}}</span>
         </div>
         <div class="stat">
             <span class="label">Health:</span>
-            <span class="value" data-value="playerHealth">0</span>
+            <span class="value">{{playerHealth}}</span>
         </div>
         <div class="stat">
             <span class="label">Tick Count:</span>
-            <span class="value" data-value="tickCount">0</span>
+            <span class="value">{{tickCount}}</span>
         </div>
     </div>
 </body>

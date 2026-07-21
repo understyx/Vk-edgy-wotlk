@@ -30,6 +30,10 @@
             <span class="label">Health:</span>
             <span class="value" data-value="playerHealth">0</span>
         </div>
+        <div class="stat">
+            <span class="label">Tick Count:</span>
+            <span class="value" data-value="tickCount">0</span>
+        </div>
     </div>
 </body>
 </rml>

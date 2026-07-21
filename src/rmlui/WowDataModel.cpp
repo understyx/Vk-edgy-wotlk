@@ -47,11 +47,11 @@ void WowDataModel::Update(const WoWMemory::GameData& data)
 {
     if (!m_handle) return;
 
-#define DIRTY_IF_CHANGED(field, value)        \
+#define DIRTY_IF_CHANGED(field, name, value)  \
     do {                                      \
         if ((field) != (value)) {             \
             (field) = (value);                \
-            m_handle.DirtyVariable(#field);   \
+            m_handle.DirtyVariable(name);     \
         }                                     \
     } while (0)
 
@@ -78,15 +78,15 @@ void WowDataModel::Update(const WoWMemory::GameData& data)
     }
 
     // Numeric / bool fields — keep internal mirrors as int
-    DIRTY_IF_CHANGED(m_mapID,          static_cast<int>(data.mapID));
-    DIRTY_IF_CHANGED(m_zoneID,         static_cast<int>(data.zoneID));
-    DIRTY_IF_CHANGED(m_gameState,      static_cast<int>(data.gameState));
-    DIRTY_IF_CHANGED(m_worldLoaded,    data.worldLoaded  ? 1 : 0);
-    DIRTY_IF_CHANGED(m_isLoading,      data.isLoading    ? 1 : 0);
-    DIRTY_IF_CHANGED(m_isIndoor,       data.isIndoor     ? 1 : 0);
-    DIRTY_IF_CHANGED(m_playerIsIngame, data.playerIsIngame ? 1 : 0);
-    DIRTY_IF_CHANGED(m_playerHealth,   static_cast<int>(data.playerHealth));
-    DIRTY_IF_CHANGED(m_tickCount,      static_cast<int>(data.tickCount));
+    DIRTY_IF_CHANGED(m_mapID,          "mapID",          static_cast<int>(data.mapID));
+    DIRTY_IF_CHANGED(m_zoneID,         "zoneID",         static_cast<int>(data.zoneID));
+    DIRTY_IF_CHANGED(m_gameState,      "gameState",      static_cast<int>(data.gameState));
+    DIRTY_IF_CHANGED(m_worldLoaded,    "worldLoaded",    data.worldLoaded  ? 1 : 0);
+    DIRTY_IF_CHANGED(m_isLoading,      "isLoading",      data.isLoading    ? 1 : 0);
+    DIRTY_IF_CHANGED(m_isIndoor,       "isIndoor",       data.isIndoor     ? 1 : 0);
+    DIRTY_IF_CHANGED(m_playerIsIngame, "playerIsIngame", data.playerIsIngame ? 1 : 0);
+    DIRTY_IF_CHANGED(m_playerHealth,   "playerHealth",   static_cast<int>(data.playerHealth));
+    DIRTY_IF_CHANGED(m_tickCount,      "tickCount",      static_cast<int>(data.tickCount));
 
     if (m_corpseX != data.corpseX) { m_corpseX = data.corpseX; m_handle.DirtyVariable("corpseX"); }
     if (m_corpseY != data.corpseY) { m_corpseY = data.corpseY; m_handle.DirtyVariable("corpseY"); }

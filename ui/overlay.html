@@ -55,6 +55,10 @@
             <span class="label">Players Online:</span>
             <span class="value" id="players">0</span>
         </div>
+        <div class="stat">
+            <span class="label">Tick Count:</span>
+            <span class="value" id="tickCount">0</span>
+        </div>
     </div>
 
     <script>
@@ -69,6 +73,9 @@
                 }
                 if (gameData.playersOnline !== undefined) {
                     document.getElementById('players').textContent = gameData.playersOnline;
+                }
+                if (gameData.tickCount !== undefined) {
+                    document.getElementById('tickCount').textContent = gameData.tickCount;
                 }
             } catch(e) {
                 console.error('Error updating game state:', e);

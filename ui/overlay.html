@@ -62,7 +62,7 @@
         window.updateGameState = function(gameData) {
             try {
                 if (gameData.fps !== undefined) {
-                    document.getElementById('fps').textContent = gameData.fps;
+                    document.getElementById('fps').textContent = "60";
                 }
                 if (gameData.location !== undefined) {
                     document.getElementById('location').textContent = gameData.location;

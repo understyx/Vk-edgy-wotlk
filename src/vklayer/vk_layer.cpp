@@ -33,6 +33,11 @@ static std::string GetLayerDir()
     return ".";
 }
 
+static bool FileExists(const std::string& path)
+{
+    return access(path.c_str(), F_OK) == 0;
+}
+
 // ============================================================================
 // RmlUi initialisation helper
 // ============================================================================
@@ -40,18 +45,45 @@ static std::string GetLayerDir()
 static void TryInitRmlUi(const vkroots::VkDeviceDispatch& dispatch)
 {
     if (gOverlay.rmlInitialized) return;
+
+    if (gOverlay.graphicsQueue == VK_NULL_HANDLE) {
+        dispatch.GetDeviceQueue(
+            gOverlay.device, gOverlay.graphicsQueueFamily, 0, &gOverlay.graphicsQueue);
+    }
+
     if (gOverlay.graphicsQueue == VK_NULL_HANDLE) return;
     if (gOverlay.images.empty()) return;
 
     const std::string layerDir  = GetLayerDir();
-    const std::string shaderDir = layerDir + "/shaders";
-    const std::string uiDir     = layerDir + "/ui";
+    std::string shaderDir = layerDir + "/shaders";
+    if (!FileExists(shaderDir + "/rmlui.vert.spv")) {
+        if (FileExists(layerDir + "/build/shaders/rmlui.vert.spv")) {
+            shaderDir = layerDir + "/build/shaders";
+        } else if (FileExists(layerDir + "/../build/shaders/rmlui.vert.spv")) {
+            shaderDir = layerDir + "/../build/shaders";
+        } else if (FileExists(layerDir + "/rmlui.vert.spv")) {
+            shaderDir = layerDir;
+        }
+    }
+
+    std::string uiDir = layerDir + "/ui";
+    if (!FileExists(uiDir + "/overlay.rml")) {
+        if (FileExists(layerDir + "/../ui/overlay.rml")) {
+            uiDir = layerDir + "/../ui";
+        } else if (FileExists(layerDir + "/overlay.rml")) {
+            uiDir = layerDir;
+        }
+    }
 
     // Try several well-known font locations (Linux)
     const char* fontCandidates[] = {
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
         "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+        "/usr/share/fonts/liberation-sans/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans.ttf",
+        "/usr/share/fonts/dejavu/DejaVuSans.ttf",
         nullptr,
     };
     std::string fontPath;
@@ -120,12 +152,6 @@ VkResult VkInstanceOverrides::CreateDevice(
                 gOverlay.graphicsQueueFamily = i;
                 break;
             }
-        }
-
-        // Retrieve the graphics queue
-        if (gOverlay.dispatch) {
-            gOverlay.dispatch->GetDeviceQueue(
-                *pDevice, gOverlay.graphicsQueueFamily, 0, &gOverlay.graphicsQueue);
         }
 
         fprintf(stdout, "[WoTLKLayer] Device created (queue family %u)\n",

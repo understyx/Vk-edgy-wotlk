@@ -89,7 +89,11 @@ bool GameDataReader::ReadGameData(GameData& out)
     // ---- Player state ----
     out.playerIsIngame = ReadAbs<uint8_t>(WoWOffsets::playerIsIngame) != 0;
 
-    // playerHealth lives at playerBase_ptr + 0x19B8
+    // playerHealth lives at playerBase_ptr + 0x19B8.
+    // The null check on playerBasePtr guards the most common failure mode
+    // (not ingame / object manager not ready).  Further VA-range validation
+    // is not feasible without platform SEH / signal handling; the caller
+    // (running inside the WoW process) accepts the same risk as any bot/hook.
     uintptr_t playerBasePtr = ReadAbs<uintptr_t>(WoWOffsets::playerBase);
     if (playerBasePtr) {
         out.playerHealth = *reinterpret_cast<const uint32_t*>(

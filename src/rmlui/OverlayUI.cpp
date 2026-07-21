@@ -180,45 +180,51 @@ void OverlayUI::UpdateGameData()
         m_dataModel.Update(snapshot);
 
 #ifdef RMLUI_LUA_BINDINGS
-    // Refresh the `wow` Lua global table with the latest values
+    // Refresh the `wow` Lua global table with the latest snapshot values.
+    // lua_getglobal always pushes exactly one value; we must pop it in both
+    // branches to keep the stack balanced.
     lua_State* L = Rml::Lua::Interpreter::GetLuaState();
-    if (L && lua_getglobal(L, "wow") == LUA_TTABLE) {
-        lua_pushstring(L, snapshot.playerName.c_str());
-        lua_setfield(L, -2, "playerName");
-        lua_pushstring(L, snapshot.realmName.c_str());
-        lua_setfield(L, -2, "realmName");
-        lua_pushstring(L, snapshot.zoneText.c_str());
-        lua_setfield(L, -2, "zoneText");
-        lua_pushstring(L, snapshot.subZoneText.c_str());
-        lua_setfield(L, -2, "subZoneText");
-        lua_pushstring(L, snapshot.continentName.c_str());
-        lua_setfield(L, -2, "continentName");
-        lua_pushinteger(L, static_cast<lua_Integer>(snapshot.mapID));
-        lua_setfield(L, -2, "mapID");
-        lua_pushinteger(L, static_cast<lua_Integer>(snapshot.zoneID));
-        lua_setfield(L, -2, "zoneID");
-        lua_pushinteger(L, static_cast<lua_Integer>(snapshot.playerHealth));
-        lua_setfield(L, -2, "playerHealth");
-        lua_pushboolean(L, snapshot.playerIsIngame ? 1 : 0);
-        lua_setfield(L, -2, "playerIsIngame");
-        lua_pushboolean(L, snapshot.worldLoaded ? 1 : 0);
-        lua_setfield(L, -2, "worldLoaded");
-        lua_pushboolean(L, snapshot.isLoading ? 1 : 0);
-        lua_setfield(L, -2, "isLoading");
-        lua_pushboolean(L, snapshot.isIndoor ? 1 : 0);
-        lua_setfield(L, -2, "isIndoor");
-        lua_pushinteger(L, static_cast<lua_Integer>(snapshot.gameState));
-        lua_setfield(L, -2, "gameState");
-        lua_pushinteger(L, static_cast<lua_Integer>(snapshot.tickCount));
-        lua_setfield(L, -2, "tickCount");
-        lua_pushnumber(L, static_cast<lua_Number>(snapshot.corpseX));
-        lua_setfield(L, -2, "corpseX");
-        lua_pushnumber(L, static_cast<lua_Number>(snapshot.corpseY));
-        lua_setfield(L, -2, "corpseY");
-        lua_pushnumber(L, static_cast<lua_Number>(snapshot.corpseZ));
-        lua_setfield(L, -2, "corpseZ");
+    if (L) {
+        int type = lua_getglobal(L, "wow");
+        if (type == LUA_TTABLE) {
+            lua_pushstring(L, snapshot.playerName.c_str());
+            lua_setfield(L, -2, "playerName");
+            lua_pushstring(L, snapshot.realmName.c_str());
+            lua_setfield(L, -2, "realmName");
+            lua_pushstring(L, snapshot.zoneText.c_str());
+            lua_setfield(L, -2, "zoneText");
+            lua_pushstring(L, snapshot.subZoneText.c_str());
+            lua_setfield(L, -2, "subZoneText");
+            lua_pushstring(L, snapshot.continentName.c_str());
+            lua_setfield(L, -2, "continentName");
+            lua_pushinteger(L, static_cast<lua_Integer>(snapshot.mapID));
+            lua_setfield(L, -2, "mapID");
+            lua_pushinteger(L, static_cast<lua_Integer>(snapshot.zoneID));
+            lua_setfield(L, -2, "zoneID");
+            lua_pushinteger(L, static_cast<lua_Integer>(snapshot.playerHealth));
+            lua_setfield(L, -2, "playerHealth");
+            lua_pushboolean(L, snapshot.playerIsIngame ? 1 : 0);
+            lua_setfield(L, -2, "playerIsIngame");
+            lua_pushboolean(L, snapshot.worldLoaded ? 1 : 0);
+            lua_setfield(L, -2, "worldLoaded");
+            lua_pushboolean(L, snapshot.isLoading ? 1 : 0);
+            lua_setfield(L, -2, "isLoading");
+            lua_pushboolean(L, snapshot.isIndoor ? 1 : 0);
+            lua_setfield(L, -2, "isIndoor");
+            lua_pushinteger(L, static_cast<lua_Integer>(snapshot.gameState));
+            lua_setfield(L, -2, "gameState");
+            lua_pushinteger(L, static_cast<lua_Integer>(snapshot.tickCount));
+            lua_setfield(L, -2, "tickCount");
+            lua_pushnumber(L, static_cast<lua_Number>(snapshot.corpseX));
+            lua_setfield(L, -2, "corpseX");
+            lua_pushnumber(L, static_cast<lua_Number>(snapshot.corpseY));
+            lua_setfield(L, -2, "corpseY");
+            lua_pushnumber(L, static_cast<lua_Number>(snapshot.corpseZ));
+            lua_setfield(L, -2, "corpseZ");
+        }
+        // Pop the value pushed by lua_getglobal (table or otherwise)
+        lua_pop(L, 1);
     }
-    lua_settop(L, 0); // clear stack
 #endif
 }
 

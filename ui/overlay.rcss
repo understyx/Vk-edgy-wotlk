@@ -12,7 +12,7 @@ body
     position: absolute;
     top: 20px;
     left: 20px;
-    width: 280px;
+    width: 340px;
     background-color: rgba(10, 10, 25, 0.85);
     border-width: 2px;
     border-color: #00cc44;
@@ -25,6 +25,16 @@ h1
     margin: 0 0 10px 0;
     font-size: 18px;
     color: #00cc44;
+}
+
+h2
+{
+    margin: 14px 0 6px 0;
+    font-size: 14px;
+    color: #00cc44;
+    border-bottom-width: 1px;
+    border-bottom-color: #333344;
+    padding-bottom: 3px;
 }
 
 .stat
@@ -45,4 +55,43 @@ h1
 {
     color: #00cc44;
     font-weight: bold;
+}
+
+.auras
+{
+    margin: 5px 0;
+    display: inline-block;
+    width: 100%;
+}
+
+.aura
+{
+    display: inline-block;
+    background-color: #222244;
+    border-width: 1px;
+    border-color: #5555aa;
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: #aaaaff;
+}
+
+#combat-log
+{
+    height: 120px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-width: 1px;
+    border-color: #333333;
+    padding: 4px;
+    font-size: 11px;
+    font-family: monospace;
+}
+
+.log-entry
+{
+    color: #dddddd;
+    margin-bottom: 2px;
+    white-space: nowrap;
 }

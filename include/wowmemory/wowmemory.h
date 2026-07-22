@@ -20,6 +20,14 @@
 namespace WoWMemory {
 
 /**
+ * @struct AuraInfo
+ * @brief Minimal descriptor for a single active aura on the local player.
+ */
+struct AuraInfo {
+    uint32_t spellId = 0;  ///< Spell ID of the aura
+};
+
+/**
  * @struct GameData
  * @brief Snapshot of WoW game state read from process memory.
  *
@@ -40,11 +48,23 @@ struct GameData {
     uint32_t    zoneID  = 0;     ///< Zone identifier
 
     // --- Player state ---
-    uint32_t    playerHealth    = 0;  ///< Current health (read via playerBase + 0x19B8)
+    uint32_t    playerHealth    = 0;  ///< Current health
+    uint32_t    playerMaxHealth = 0;  ///< Maximum health
+    uint32_t    playerLevel     = 0;  ///< Character level
+    uint32_t    playerPower     = 0;  ///< Current power (mana/rage/energy/…)
+    uint32_t    playerMaxPower  = 0;  ///< Maximum power
+    uint8_t     playerPowerType = 0;  ///< Power type byte (0=mana,1=rage,3=energy,…)
+    uint8_t     playerComboPoints = 0; ///< Combo points
     bool        playerIsIngame  = false;
     bool        isLoading       = false;
     bool        worldLoaded     = false;
     bool        isIndoor        = false;
+
+    // --- Player position ---
+    float       playerPosX    = 0.0f;
+    float       playerPosY    = 0.0f;
+    float       playerPosZ    = 0.0f;
+    float       playerRotation= 0.0f; ///< Facing angle in radians
 
     // --- Game state ---
     uint32_t    gameState  = 0;  ///< Internal game state enum
@@ -54,6 +74,24 @@ struct GameData {
     float       corpseX = 0.0f;
     float       corpseY = 0.0f;
     float       corpseZ = 0.0f;
+
+    // --- GUIDs ---
+    uint64_t    targetGUID    = 0;  ///< Current target GUID (from unit fields)
+    uint64_t    mouseOverGUID = 0;  ///< Mouse-over GUID
+    uint64_t    lastTargetGUID= 0;  ///< Last target GUID
+
+    // --- Casting / channeling ---
+    uint32_t    castingSpellId = 0;   ///< Currently cast spell id (0 = none)
+    uint32_t    channelSpellId = 0;   ///< Currently channeled spell id (0 = none)
+
+    // --- Auras (local player only) ---
+    static constexpr size_t kMaxAuras = 40;
+    AuraInfo    auras[kMaxAuras];     ///< Active auras on local player
+    uint32_t    auraCount = 0;        ///< Number of valid entries in auras[]
+
+    // --- Camera ---
+    float       cameraYaw   = 0.0f;  ///< Camera yaw in radians
+    float       cameraPitch = 0.0f;  ///< Camera pitch in radians
 };
 
 /**

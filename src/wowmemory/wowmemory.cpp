@@ -83,8 +83,10 @@ static bool ReadExactly(int fd, void* buf, size_t size)
 
 void GameDataReader::ServerLoop()
 {
+    fprintf(stderr, "[WoW IPC Server] Initializing TCP server socket...\n");
     m_serverFd = socket(AF_INET, SOCK_STREAM, 0);
     if (m_serverFd == -1) {
+        fprintf(stderr, "[WoW IPC Server] Failed to create TCP socket!\n");
         return;
     }
 
@@ -93,22 +95,27 @@ void GameDataReader::ServerLoop()
 
     struct sockaddr_in address;
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     address.sin_port = htons(50055);
 
     if (bind(m_serverFd, (struct sockaddr*)&address, sizeof(address)) < 0) {
+        fprintf(stderr, "[WoW IPC Server] Failed to bind TCP socket to port 50055!\n");
         close(m_serverFd);
         m_serverFd = -1;
         return;
     }
 
     if (listen(m_serverFd, 3) < 0) {
+        fprintf(stderr, "[WoW IPC Server] Failed to listen on TCP socket!\n");
         close(m_serverFd);
         m_serverFd = -1;
         return;
     }
 
+    fprintf(stderr, "[WoW IPC Server] Server listening on 127.0.0.1:50055 successfully.\n");
+
     std::vector<uint8_t> recvBuf;
+    uint32_t totalPacketsReceived = 0;
 
     while (!m_stopServer) {
         int addrlen = sizeof(address);
@@ -119,34 +126,50 @@ void GameDataReader::ServerLoop()
             continue;
         }
 
+        fprintf(stderr, "[WoW IPC Server] Accepted connection from WoW 32-bit DLL client!\n");
+
         while (!m_stopServer) {
             uint32_t payloadLen = 0;
             if (!ReadExactly(m_clientFd, &payloadLen, sizeof(payloadLen))) {
+                fprintf(stderr, "[WoW IPC Server] Failed to read framing length. Connection closed by client.\n");
                 break;
             }
 
             if (payloadLen > 1024 * 1024) { // safety limit 1MB
+                fprintf(stderr, "[WoW IPC Server] Received invalid payload length: %u bytes! Aborting connection.\n", payloadLen);
                 break;
             }
 
             recvBuf.resize(payloadLen);
             if (payloadLen > 0) {
                 if (!ReadExactly(m_clientFd, recvBuf.data(), payloadLen)) {
+                    fprintf(stderr, "[WoW IPC Server] Failed to read complete payload of size %u. Connection aborted.\n", payloadLen);
                     break;
                 }
             }
 
             GameData data;
             if (DeserializeGameData(recvBuf, data)) {
-                std::lock_guard<std::mutex> lock(m_cacheMutex);
-                m_cachedData = data;
+                {
+                    std::lock_guard<std::mutex> lock(m_cacheMutex);
+                    m_cachedData = data;
+                }
+                totalPacketsReceived++;
+                if (totalPacketsReceived % 200 == 1) {
+                    fprintf(stderr, "[WoW IPC Server] Active receiving: packet #%u successfully received and deserialized (player: '%s', zone: '%s').\n",
+                            totalPacketsReceived, data.playerName.c_str(), data.zoneText.c_str());
+                }
+            } else {
+                fprintf(stderr, "[WoW IPC Server] Failed to deserialize GameData packet!\n");
             }
         }
 
+        fprintf(stderr, "[WoW IPC Server] Closing client socket...\n");
         close(m_clientFd);
         m_clientFd = -1;
     }
 
+    fprintf(stderr, "[WoW IPC Server] Server thread terminating...\n");
     close(m_serverFd);
     m_serverFd = -1;
 }

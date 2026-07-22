@@ -100,6 +100,10 @@ private:
 
     Rml::Context*        m_context  = nullptr;
     Rml::ElementDocument* m_document = nullptr;
+    Rml::ElementDocument* m_playerDoc = nullptr;
+    Rml::ElementDocument* m_targetDoc = nullptr;
+    Rml::ElementDocument* m_partyDoc  = nullptr;
+    Rml::ElementDocument* m_raidDoc   = nullptr;
 
     VkDevice                         m_device   = VK_NULL_HANDLE;
     const vkroots::VkDeviceDispatch* m_dispatch = nullptr;

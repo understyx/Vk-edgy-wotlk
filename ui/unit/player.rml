@@ -1,0 +1,42 @@
+<rml>
+<head>
+    <title>Player Unit Frame</title>
+    <link type="text/rcss" href="../overlay.rcss"/>
+    <link type="text/rcss" href="../elements/bars.rcss"/>
+    <style>
+        body {
+            position: absolute;
+            left: 150px;
+            bottom: 120px;
+            width: 250px;
+            height: 120px;
+        }
+    </style>
+</head>
+<body data-model="wow">
+    <div class="unit-frame" data-show="playerIsIngame">
+        <div class="unit-header">
+            <span class="unit-name">{{playerName}}</span>
+            <span class="unit-level">Lv{{playerLevel}}</span>
+        </div>
+
+        <!-- Health Bar -->
+        <div class="bar-container">
+            <div class="bar-fill hp-fill" style="width: {{ playerMaxHealth > 0 ? (playerHealth * 100 / playerMaxHealth) : 0 }}%;"></div>
+            <div class="bar-text">{{playerHealth}} / {{playerMaxHealth}}</div>
+        </div>
+
+        <!-- Power Bar -->
+        <div class="bar-container">
+            <div class="bar-fill power-fill pt-{{playerPowerType}}" style="width: {{ playerMaxPower > 0 ? (playerPower * 100 / playerMaxPower) : 0 }}%;"></div>
+            <div class="bar-text">{{playerPower}} / {{playerMaxPower}}</div>
+        </div>
+
+        <!-- Auras -->
+        <div class="auras-container" data-show="playerAuras.size > 0">
+            <div class="aura-title">Player Buffs/Debuffs:</div>
+            <span class="aura-badge" data-for="spellId : playerAuras">ID: {{spellId}}</span>
+        </div>
+    </div>
+</body>
+</rml>

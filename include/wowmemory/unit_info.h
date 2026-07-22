@@ -21,11 +21,26 @@ uintptr_t GetObjectBaseByGUID(uint64_t targetGUID);
 void ReadPlayerUnitFields(uintptr_t playerBasePtr, GameData& out);
 
 /**
+ * @brief Helper to read target's unit fields (descriptor array) and fill corresponding fields.
+ * @param targetBasePtr The base address of the target.
+ * @param out The GameData object to populate.
+ */
+void ReadTargetUnitFields(uintptr_t targetBasePtr, GameData& out);
+
+/**
  * @brief Helper to read player's active position.
  * @param playerBasePtr The base address of the player.
  * @param out The GameData object to populate.
  */
 void ReadPlayerPosition(uintptr_t playerBasePtr, GameData& out);
+
+/**
+ * @brief Retrieve name for any unit.
+ * @param guid The GUID of the unit.
+ * @param basePtr The base address of the unit.
+ * @return The name of the unit as a string.
+ */
+std::string GetUnitName(uint64_t guid, uintptr_t basePtr);
 
 /**
  * @brief Helper to read camera information.

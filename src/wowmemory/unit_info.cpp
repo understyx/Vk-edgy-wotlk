@@ -84,6 +84,52 @@ void ReadPlayerUnitFields(uintptr_t playerBasePtr, GameData& out)
     }
 }
 
+void ReadTargetUnitFields(uintptr_t targetBasePtr, GameData& out)
+{
+    uintptr_t unitFieldsAddr = 0;
+    uintptr_t ufPtrAddr = targetBasePtr + WoWOffsets::objectUnitFields;
+    if (IsReadableRange(ufPtrAddr, sizeof(uint32_t))) {
+        unitFieldsAddr = *reinterpret_cast<const uint32_t*>(ufPtrAddr);
+    }
+
+    if (unitFieldsAddr) {
+        auto readUF32 = [&](uint32_t relOffset) -> uint32_t {
+            uintptr_t addr = unitFieldsAddr + relOffset;
+            if (!IsReadableRange(addr, sizeof(uint32_t))) return 0u;
+            return *reinterpret_cast<const uint32_t*>(addr);
+        };
+
+        out.targetHealth    = readUF32(WoWOffsets::unitFieldHealth);
+        out.targetMaxHealth = readUF32(WoWOffsets::unitFieldMaxHealth);
+        out.targetLevel     = readUF32(WoWOffsets::unitFieldLevel);
+
+        // Power type is stored as a byte in the object descriptor struct.
+        uintptr_t descriptorAddr = 0;
+        uintptr_t descPtrAddr = targetBasePtr + WoWOffsets::objectDescriptorOffset;
+        if (IsReadableRange(descPtrAddr, sizeof(uint32_t))) {
+            descriptorAddr = *reinterpret_cast<const uint32_t*>(descPtrAddr);
+        }
+        if (descriptorAddr) {
+            uintptr_t ptAddr = descriptorAddr + WoWOffsets::unitFieldPowerTypeByteFromDescriptor;
+            if (IsReadableRange(ptAddr, sizeof(uint8_t))) {
+                out.targetPowerType = *reinterpret_cast<const uint8_t*>(ptAddr);
+            }
+        }
+
+        // Read current and max power for the target's power type.
+        constexpr uint32_t kPowerTypeCount = 7;
+        uint8_t pt = out.targetPowerType;
+        if (pt < kPowerTypeCount) {
+            uintptr_t curAddr = unitFieldsAddr + WoWOffsets::unitFieldPowers + pt * sizeof(uint32_t);
+            uintptr_t maxAddr = unitFieldsAddr + WoWOffsets::unitFieldMaxPowers + pt * sizeof(uint32_t);
+            if (IsReadableRange(curAddr, sizeof(uint32_t)))
+                out.targetPower = *reinterpret_cast<const uint32_t*>(curAddr);
+            if (IsReadableRange(maxAddr, sizeof(uint32_t)))
+                out.targetMaxPower = *reinterpret_cast<const uint32_t*>(maxAddr);
+        }
+    }
+}
+
 void ReadPlayerPosition(uintptr_t playerBasePtr, GameData& out)
 {
     auto readRelFloat = [&](uint32_t relOffset) -> float {
@@ -121,6 +167,53 @@ void ReadCameraInfo(GameData& out)
             }
         }
     }
+}
+
+std::string GetUnitName(uint64_t guid, uintptr_t basePtr)
+{
+    if (guid == 0) return "";
+
+    // Check if GUID type indicates a Player
+    uint16_t high = static_cast<uint16_t>(guid >> 48);
+    if (high == 0x0000 || high == 0x0001) {
+        // Player: Lookup in Name Cache (NameStore)
+        uintptr_t nameCache = ReadAbs<uint32_t>(WoWOffsets::nameStore);
+        if (nameCache) {
+            uint32_t mask = ReadAbs<uint32_t>(nameCache + WoWOffsets::nameMask);
+            uintptr_t base = ReadAbs<uint32_t>(nameCache + WoWOffsets::nameBase);
+            if (base) {
+                uint32_t index = static_cast<uint32_t>(guid) & mask;
+                uintptr_t node = ReadAbs<uint32_t>(base + index * 4);
+                size_t count = 0;
+                while (node && (node & 1) == 0 && count < 150) {
+                    uint64_t nodeGuid = ReadAbs<uint64_t>(node);
+                    if (nodeGuid == guid) {
+                        return ReadInlineString(node + WoWOffsets::nameString, 40);
+                    }
+                    node = ReadAbs<uint32_t>(node + WoWOffsets::nameNodeNextOffset);
+                    count++;
+                }
+            }
+        }
+    } else {
+        // Creature / NPC / Pet: Read from template DB record
+        if (basePtr) {
+            uintptr_t pTemplate = ReadAbs<uint32_t>(basePtr + 0x960);
+            if (pTemplate) {
+                // Try offset 0x18 first
+                uintptr_t pName = ReadAbs<uint32_t>(pTemplate + 0x18);
+                if (pName && IsReadableRange(pName, 4)) {
+                    return ReadInlineString(pName, 64);
+                }
+                // Fallback to offset 0x0
+                pName = ReadAbs<uint32_t>(pTemplate + 0x0);
+                if (pName && IsReadableRange(pName, 4)) {
+                    return ReadInlineString(pName, 64);
+                }
+            }
+        }
+    }
+    return "Target";
 }
 
 } // namespace WoWMemory

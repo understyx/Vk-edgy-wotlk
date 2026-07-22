@@ -1,0 +1,104 @@
+<rml>
+<head>
+    <title>Raid Frames</title>
+    <link type="text/rcss" href="../overlay.rcss"/>
+    <link type="text/rcss" href="../elements/bars.rcss"/>
+    <style>
+        body {
+            position: absolute;
+            left: 20px;
+            top: 480px;
+            width: 140px;
+            height: 180px;
+        }
+        .raid-container {
+            display: flex;
+            flex-wrap: wrap;
+            width: 130px;
+            gap: 4px;
+        }
+        .raid-member {
+            width: 38px;
+            height: 30px;
+            background-color: rgba(15, 15, 18, 0.88);
+            border-width: 1px;
+            border-style: solid;
+            border-color: #333333;
+            border-radius: 2px;
+            position: relative;
+        }
+        .raid-hp {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #228b22;
+        }
+        .raid-name {
+            position: absolute;
+            top: 4px;
+            width: 100%;
+            text-align: center;
+            font-size: 8px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+        .raid-dead {
+            background-color: #4c0519;
+            border-color: #991b1b;
+        }
+        .raid-dead .raid-name {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body data-model="wow">
+    <!-- Show raid frames only when logged in -->
+    <div data-show="playerIsIngame">
+        <div class="raid-container">
+            <!-- Group 1 -->
+            <div class="raid-member">
+                <div class="raid-hp" style="height: 100%;"></div>
+                <div class="raid-name">Tank</div>
+            </div>
+            <div class="raid-member">
+                <div class="raid-hp" style="height: 90%;"></div>
+                <div class="raid-name">Heal</div>
+            </div>
+            <div class="raid-member">
+                <div class="raid-hp" style="height: 65%;"></div>
+                <div class="raid-name">Mage</div>
+            </div>
+            <div class="raid-member">
+                <div class="raid-hp" style="height: 100%;"></div>
+                <div class="raid-name">Lock</div>
+            </div>
+            <div class="raid-member raid-dead">
+                <div class="raid-name">Dead</div>
+            </div>
+
+            <!-- Group 2 -->
+            <div class="raid-member">
+                <div class="raid-hp" style="height: 80%;"></div>
+                <div class="raid-name">Rogue</div>
+            </div>
+            <div class="raid-member">
+                <div class="raid-hp" style="height: 100%;"></div>
+                <div class="raid-name">Druid</div>
+            </div>
+            <div class="raid-member">
+                <div class="raid-hp" style="height: 40%;"></div>
+                <div class="raid-name">Priest</div>
+            </div>
+            <div class="raid-member">
+                <div class="raid-hp" style="height: 95%;"></div>
+                <div class="raid-name">Shaman</div>
+            </div>
+            <div class="raid-member">
+                <div class="raid-hp" style="height: 100%;"></div>
+                <div class="raid-name">DK</div>
+            </div>
+        </div>
+    </div>
+</body>
+</rml>

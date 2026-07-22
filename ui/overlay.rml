@@ -1,18 +1,34 @@
 <rml>
 <head>
-    <title>WoTLK Overlay</title>
+    <title>WoTLK Overlay - Game State Panel</title>
     <link type="text/rcss" href="overlay.rcss"/>
 </head>
 <body data-model="wow">
     <div id="overlay">
-        <h1>Game Status</h1>
+        <h1>WoW Game State</h1>
+
+        <h2>Identity</h2>
         <div class="stat">
-            <span class="label">Player:</span>
+            <span class="label">Player Name:</span>
             <span class="value">{{playerName}}</span>
         </div>
         <div class="stat">
-            <span class="label">Realm:</span>
+            <span class="label">Realm Name:</span>
             <span class="value">{{realmName}}</span>
+        </div>
+        <div class="stat" data-show="playerIsIngame">
+            <span class="label">Player GUID:</span>
+            <span class="value-blue">0x{{localPlayerGUID | format_to_hex}}</span>
+        </div>
+        <div class="stat">
+            <span class="label">In Game:</span>
+            <span class="value">{{playerIsIngame ? 'Yes' : 'No'}}</span>
+        </div>
+
+        <h2>World Location</h2>
+        <div class="stat">
+            <span class="label">Continent:</span>
+            <span class="value">{{continentName}}</span>
         </div>
         <div class="stat">
             <span class="label">Zone:</span>
@@ -23,33 +39,54 @@
             <span class="value">{{subZoneText}}</span>
         </div>
         <div class="stat">
-            <span class="label">Map ID:</span>
-            <span class="value">{{mapID}}</span>
+            <span class="label">Map ID / Zone ID:</span>
+            <span class="value">{{mapID}} / {{zoneID}}</span>
         </div>
         <div class="stat">
-            <span class="label">Health:</span>
-            <span class="value">{{playerHealth}}</span>
+            <span class="label">Environment:</span>
+            <span class="value">{{isIndoor ? 'Indoor' : 'Outdoor'}}</span>
+        </div>
+
+        <h2 data-show="corpseX != 0.0">Corpse Location</h2>
+        <div class="stat" data-show="corpseX != 0.0">
+            <span class="label">Coordinates:</span>
+            <span class="value">X:{{corpseX | round(2)}}, Y:{{corpseY | round(2)}}</span>
+        </div>
+
+        <h2>Casting & Interactions</h2>
+        <div class="stat">
+            <span class="label">Casting Spell ID:</span>
+            <span class="value-red">{{castingSpellId > 0 ? castingSpellId : 'None'}}</span>
+        </div>
+        <div class="stat">
+            <span class="label">Channeling Spell ID:</span>
+            <span class="value-red">{{channelSpellId > 0 ? channelSpellId : 'None'}}</span>
+        </div>
+        <div class="stat" data-show="mouseOverGUID != 0">
+            <span class="label">Mouseover GUID:</span>
+            <span class="value-blue">0x{{mouseOverGUID | format_to_hex}}</span>
+        </div>
+
+        <h2>System State</h2>
+        <div class="stat">
+            <span class="label">Game State Code:</span>
+            <span class="value">{{gameState}}</span>
+        </div>
+        <div class="stat">
+            <span class="label">Loading Screen:</span>
+            <span class="value">{{isLoading ? 'Yes' : 'No'}}</span>
+        </div>
+        <div class="stat">
+            <span class="label">World Loaded:</span>
+            <span class="value">{{worldLoaded ? 'Yes' : 'No'}}</span>
         </div>
         <div class="stat">
             <span class="label">Tick Count:</span>
             <span class="value">{{tickCount}}</span>
         </div>
 
-        <h2>Player Auras</h2>
-        <div class="auras">
-            <div data-for="aura: playerAuras">
-                {{aura}}
-            </div>
-        </div>
-
-
-        <h2>Target Auras</h2>
-        <div class="auras">
-            <span class="aura" data-for="aura: targetAuras">{{aura}}</span>
-        </div>
-
         <h2>Combat Log</h2>
-        <div id="combat-log">
+        <div id="combat-log" data-show="playerIsIngame">
             <div class="log-entry" data-for="entry: combatLog">{{entry}}</div>
         </div>
     </div>

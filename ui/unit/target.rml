@@ -1,0 +1,42 @@
+<rml>
+<head>
+    <title>Target Unit Frame</title>
+    <link type="text/rcss" href="../overlay.rcss"/>
+    <link type="text/rcss" href="../elements/bars.rcss"/>
+    <style>
+        body {
+            position: absolute;
+            right: 150px;
+            bottom: 120px;
+            width: 250px;
+            height: 120px;
+        }
+    </style>
+</head>
+<body data-model="wow">
+    <div class="unit-frame" data-show="targetName != ''">
+        <div class="unit-header">
+            <span class="unit-name">{{targetName}}</span>
+            <span class="unit-level">Lv{{targetLevel}}</span>
+        </div>
+
+        <!-- Health Bar -->
+        <div class="bar-container">
+            <div class="bar-fill hp-fill" style="width: {{ targetMaxHealth > 0 ? (targetHealth * 100 / targetMaxHealth) : 0 }}%;"></div>
+            <div class="bar-text">{{targetHealth}} / {{targetMaxHealth}}</div>
+        </div>
+
+        <!-- Power Bar -->
+        <div class="bar-container">
+            <div class="bar-fill power-fill pt-{{targetPowerType}}" style="width: {{ targetMaxPower > 0 ? (targetPower * 100 / targetMaxPower) : 0 }}%;"></div>
+            <div class="bar-text">{{targetPower}} / {{targetMaxPower}}</div>
+        </div>
+
+        <!-- Auras -->
+        <div class="auras-container" data-show="targetAuras.size > 0">
+            <div class="aura-title">Target Buffs/Debuffs:</div>
+            <span class="aura-badge" data-for="spellId : targetAuras">ID: {{spellId}}</span>
+        </div>
+    </div>
+</body>
+</rml>

@@ -125,12 +125,22 @@ bool GameDataReader::ReadGameData(GameData& out)
         out.auraCount       = 0;
     }
 
-    // ---- Target Auras ----
+    // ---- Target State & Auras ----
     out.targetAuraCount = 0;
+    out.targetHealth    = 0;
+    out.targetMaxHealth = 0;
+    out.targetLevel     = 0;
+    out.targetPower     = 0;
+    out.targetMaxPower  = 0;
+    out.targetPowerType = 0;
+    out.targetName      = "";
+
     if (out.targetGUID != 0) {
         uintptr_t targetBasePtr = GetObjectBaseByGUID(out.targetGUID);
         if (targetBasePtr) {
+            ReadTargetUnitFields(targetBasePtr, out);
             out.targetAuraCount = ReadAurasForUnit(targetBasePtr, out.targetAuras, GameData::kMaxTargetAuras);
+            out.targetName = GetUnitName(out.targetGUID, targetBasePtr);
         }
     }
 

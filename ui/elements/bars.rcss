@@ -1,0 +1,105 @@
+/* Shared Unit Frame styles */
+.unit-frame {
+    position: absolute;
+    width: 250px;
+    background-color: rgba(10, 10, 12, 0.88);
+    border-width: 2px;
+    border-style: solid;
+    border-color: #3d3d3d;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.unit-header {
+    margin-bottom: 4px;
+}
+
+.unit-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #ffffff;
+    float: left;
+}
+
+.unit-level {
+    font-size: 12px;
+    font-weight: bold;
+    color: #ffd100; /* WoW gold */
+    float: right;
+}
+
+/* Bar styles */
+.bar-container {
+    height: 18px;
+    background-color: #0d0d0d;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #3a3a3a;
+    position: relative;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 4px;
+    clear: both;
+}
+
+.bar-fill {
+    height: 100%;
+}
+
+.bar-text {
+    position: absolute;
+    top: 2px;
+    width: 100%;
+    text-align: center;
+    font-size: 11px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+/* Health Bar Colors */
+.hp-fill {
+    background-color: #228b22; /* Classic Green */
+}
+
+/* Power Bar Colors by Type */
+.power-fill {
+    background-color: #8b5cf6; /* Purple default */
+}
+.power-fill.pt-0 {
+    background-color: #0000ff; /* Mana: Blue */
+}
+.power-fill.pt-1 {
+    background-color: #ff0000; /* Rage: Red */
+}
+.power-fill.pt-3 {
+    background-color: #ffff00; /* Energy: Yellow */
+}
+.power-fill.pt-6 {
+    background-color: #00ccff; /* Runic Power: Cyan */
+}
+
+/* Aura list */
+.auras-container {
+    margin-top: 4px;
+    clear: both;
+}
+
+.aura-title {
+    font-size: 10px;
+    color: #888888;
+    margin-bottom: 2px;
+}
+
+.aura-badge {
+    display: inline-block;
+    background-color: #1a1a24;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #4a4a6a;
+    border-radius: 4px;
+    padding: 1px 4px;
+    margin-right: 3px;
+    margin-bottom: 3px;
+    font-size: 9px;
+    color: #ffd100;
+}

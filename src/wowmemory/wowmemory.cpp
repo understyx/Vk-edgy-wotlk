@@ -113,7 +113,12 @@ static uint32_t ReadAurasForUnit(uintptr_t unitBase, AuraInfo* outAuras, size_t 
 {
     if (!unitBase) return 0;
 
-    constexpr uint32_t kAuraTableDynamic = 0xFFFFFFFF; // sentinel: use dynamic (table 2) path
+    // Inline lambda to read uint16 at relative offset from unitBase
+    auto readRelU16 = [&](uint32_t relOffset) -> uint16_t {
+        uintptr_t addr = unitBase + relOffset;
+        if (!IsReadableRange(addr, sizeof(uint16_t))) return 0u;
+        return *reinterpret_cast<const uint16_t*>(addr);
+    };
 
     // Inline lambda to read uint32 at relative offset from unitBase
     auto readRelU32 = [&](uint32_t relOffset) -> uint32_t {
@@ -122,11 +127,11 @@ static uint32_t ReadAurasForUnit(uintptr_t unitBase, AuraInfo* outAuras, size_t 
         return *reinterpret_cast<const uint32_t*>(addr);
     };
 
-    uint32_t auraCount1 = readRelU32(WoWOffsets::auraCount1Offset);
+    uint32_t auraCount1 = readRelU16(WoWOffsets::auraCount1Offset);
     uintptr_t auraTablePtr = 0;
     uint32_t  totalAuras   = 0;
 
-    if (auraCount1 == kAuraTableDynamic) {
+    if (auraCount1 == 0xFFFF) {
         // Dynamic table: pointer at auraTable2Offset, count at auraCount2Offset
         totalAuras = readRelU32(WoWOffsets::auraCount2Offset);
         uintptr_t tAddr = unitBase + WoWOffsets::auraTable2Offset;
@@ -241,9 +246,15 @@ bool GameDataReader::ReadGameData(GameData& out)
 
     // ---- Player object — position, unit fields, casting, auras ----
     // playerBase is the local player object pointer.
-    // (The object manager path via currentClientConnection + currentManagerOffset
-    //  can be used for iterating other objects, but is not needed here.)
-    uintptr_t playerBasePtr = ReadAbs<uint32_t>(WoWOffsets::playerBase);
+    // We try to retrieve it first via Object Manager from localPlayerGUID,
+    // falling back to absolute playerBase pointer if not found.
+    uintptr_t playerBasePtr = 0;
+    if (out.localPlayerGUID != 0) {
+        playerBasePtr = GetObjectBaseByGUID(out.localPlayerGUID);
+    }
+    if (!playerBasePtr) {
+        playerBasePtr = ReadAbs<uint32_t>(WoWOffsets::playerBase);
+    }
 
     if (playerBasePtr && IsReadableRange(playerBasePtr, 4)) {
         // --- Position ---

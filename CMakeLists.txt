@@ -176,6 +176,7 @@ add_custom_command(TARGET vklayer_understyx_wotlk POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DIST_DIR}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DIST_DIR}/ui
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DIST_DIR}/shaders
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DIST_DIR}/docs
 
     # Copy library and json manifest
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:vklayer_understyx_wotlk> ${DIST_DIR}/
@@ -183,6 +184,9 @@ add_custom_command(TARGET vklayer_understyx_wotlk POST_BUILD
 
     # Copy UI directory completely (including fonts)
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/ui ${DIST_DIR}/ui
+
+    # Copy docs directory completely
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/docs ${DIST_DIR}/docs
 
     # Copy RmlUi libraries
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:rmlui_core> ${DIST_DIR}/

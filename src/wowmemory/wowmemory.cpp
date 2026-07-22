@@ -11,6 +11,7 @@
 #include "wowmemory/wowmemory.h"
 #include "wowmemory/offsets.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -152,24 +153,176 @@ bool GameDataReader::ReadGameData(GameData& out)
     out.tickCount    = ReadAbs<uint32_t>(WoWOffsets::tickCount);
 
     // ---- Player state ----
-    out.playerIsIngame = ReadAbs<uint8_t>(WoWOffsets::playerIsIngame) != 0;
+    out.playerIsIngame    = ReadAbs<uint8_t>(WoWOffsets::playerIsIngame) != 0;
+    out.playerComboPoints = ReadAbs<uint8_t>(WoWOffsets::comboPoints);
 
-    // playerHealth lives at playerBase_ptr + 0x19B8.
-    // The null check on playerBasePtr guards the most common failure mode
-    // (not ingame / object manager not ready). Further VA-range validation
-    // is performed safely using our IsReadableRange check.
-    uintptr_t playerBasePtr = ReadAbs<uint32_t>(WoWOffsets::playerBase);
-    if (playerBasePtr && IsReadableRange(playerBasePtr + WoWOffsets::playerHealth, sizeof(uint32_t))) {
-        out.playerHealth = *reinterpret_cast<const uint32_t*>(
-            playerBasePtr + WoWOffsets::playerHealth);
-    } else {
-        out.playerHealth = 0;
-    }
+    // ---- GUIDs ----
+    out.mouseOverGUID  = ReadAbs<uint64_t>(WoWOffsets::mouseOverGUID);
+    out.lastTargetGUID = ReadAbs<uint64_t>(WoWOffsets::lastTargetGUID);
 
     // ---- Corpse ----
     out.corpseX = ReadAbs<float>(WoWOffsets::corpseX);
     out.corpseY = ReadAbs<float>(WoWOffsets::corpseY);
     out.corpseZ = ReadAbs<float>(WoWOffsets::corpseZ);
+
+    // ---- Player object — position, unit fields, casting, auras ----
+    // playerBase is the local player object pointer.
+    // (The object manager path via currentClientConnection + currentManagerOffset
+    //  can be used for iterating other objects, but is not needed here.)
+    uintptr_t playerBasePtr = ReadAbs<uint32_t>(WoWOffsets::playerBase);
+
+    if (playerBasePtr && IsReadableRange(playerBasePtr, 4)) {
+        // --- Position ---
+        auto readRelFloat = [&](uint32_t relOffset) -> float {
+            uintptr_t addr = playerBasePtr + relOffset;
+            if (!IsReadableRange(addr, sizeof(float))) return 0.0f;
+            return *reinterpret_cast<const float*>(addr);
+        };
+        out.playerPosX     = readRelFloat(WoWOffsets::objectPosX);
+        out.playerPosY     = readRelFloat(WoWOffsets::objectPosY);
+        out.playerPosZ     = readRelFloat(WoWOffsets::objectPosZ);
+        out.playerRotation = readRelFloat(WoWOffsets::objectRotation);
+
+        // --- Health (legacy path kept, now also via unit fields) ---
+        if (IsReadableRange(playerBasePtr + WoWOffsets::playerHealth, sizeof(uint32_t))) {
+            out.playerHealth = *reinterpret_cast<const uint32_t*>(
+                playerBasePtr + WoWOffsets::playerHealth);
+        } else {
+            out.playerHealth = 0;
+        }
+
+        // --- Unit fields (descriptor array) ---
+        uintptr_t unitFieldsAddr = 0;
+        uintptr_t ufPtrAddr = playerBasePtr + WoWOffsets::objectUnitFields;
+        if (IsReadableRange(ufPtrAddr, sizeof(uint32_t))) {
+            unitFieldsAddr = *reinterpret_cast<const uint32_t*>(ufPtrAddr);
+        }
+
+        if (unitFieldsAddr) {
+            auto readUF32 = [&](uint32_t relOffset) -> uint32_t {
+                uintptr_t addr = unitFieldsAddr + relOffset;
+                if (!IsReadableRange(addr, sizeof(uint32_t))) return 0u;
+                return *reinterpret_cast<const uint32_t*>(addr);
+            };
+            auto readUF64 = [&](uint32_t relOffset) -> uint64_t {
+                uintptr_t addr = unitFieldsAddr + relOffset;
+                if (!IsReadableRange(addr, sizeof(uint64_t))) return 0ull;
+                return *reinterpret_cast<const uint64_t*>(addr);
+            };
+
+            out.playerHealth    = readUF32(WoWOffsets::unitFieldHealth);
+            out.playerMaxHealth = readUF32(WoWOffsets::unitFieldMaxHealth);
+            out.playerLevel     = readUF32(WoWOffsets::unitFieldLevel);
+            out.targetGUID      = readUF64(WoWOffsets::unitFieldTargetGUID);
+
+            // Power type is stored as a byte in the object descriptor struct.
+            uintptr_t descriptorAddr = 0;
+            uintptr_t descPtrAddr = playerBasePtr + WoWOffsets::objectDescriptorOffset;
+            if (IsReadableRange(descPtrAddr, sizeof(uint32_t))) {
+                descriptorAddr = *reinterpret_cast<const uint32_t*>(descPtrAddr);
+            }
+            if (descriptorAddr) {
+                uintptr_t ptAddr = descriptorAddr + WoWOffsets::unitFieldPowerTypeByteFromDescriptor;
+                if (IsReadableRange(ptAddr, sizeof(uint8_t))) {
+                    out.playerPowerType = *reinterpret_cast<const uint8_t*>(ptAddr);
+                }
+            }
+
+            // Read current and max power for the player's power type.
+            // UNIT_FIELD_POWERS and UNIT_FIELD_MAXPOWERS are arrays of 7 uint32s.
+            constexpr uint32_t kPowerTypeCount = 7;
+            uint8_t pt = out.playerPowerType;
+            if (pt < kPowerTypeCount) {
+                uintptr_t curAddr = unitFieldsAddr + WoWOffsets::unitFieldPowers + pt * sizeof(uint32_t);
+                uintptr_t maxAddr = unitFieldsAddr + WoWOffsets::unitFieldMaxPowers + pt * sizeof(uint32_t);
+                if (IsReadableRange(curAddr, sizeof(uint32_t)))
+                    out.playerPower = *reinterpret_cast<const uint32_t*>(curAddr);
+                if (IsReadableRange(maxAddr, sizeof(uint32_t)))
+                    out.playerMaxPower = *reinterpret_cast<const uint32_t*>(maxAddr);
+            }
+        }
+
+        // --- Casting / channeling ---
+        auto readRelU32 = [&](uint32_t relOffset) -> uint32_t {
+            uintptr_t addr = playerBasePtr + relOffset;
+            if (!IsReadableRange(addr, sizeof(uint32_t))) return 0u;
+            return *reinterpret_cast<const uint32_t*>(addr);
+        };
+        out.castingSpellId = readRelU32(WoWOffsets::unitCastingIdOffset);
+        out.channelSpellId = readRelU32(WoWOffsets::unitChannelIdOffset);
+
+        // --- Auras ---
+        // WoW maintains two aura tables; table 1 is used when the aura count
+        // stored at auraCount1Offset is non-zero, otherwise fall back to table 2.
+        out.auraCount = 0;
+        uint32_t auraCount1 = readRelU32(WoWOffsets::auraCount1Offset);
+        uint32_t auraCount2 = readRelU32(WoWOffsets::auraCount2Offset);
+
+        uintptr_t auraTablePtr = 0;
+        uint32_t  totalAuras   = 0;
+
+        if (auraCount1 > 0) {
+            // Table 1: the pointer itself is stored inline at auraTable1Offset
+            uintptr_t tAddr = playerBasePtr + WoWOffsets::auraTable1Offset;
+            if (IsReadableRange(tAddr, sizeof(uint32_t))) {
+                auraTablePtr = *reinterpret_cast<const uint32_t*>(tAddr);
+                totalAuras   = auraCount1;
+            }
+        } else if (auraCount2 > 0) {
+            // Table 2: an external pointer stored at auraTable2Offset
+            uintptr_t tAddr = playerBasePtr + WoWOffsets::auraTable2Offset;
+            if (IsReadableRange(tAddr, sizeof(uint32_t))) {
+                auraTablePtr = *reinterpret_cast<const uint32_t*>(tAddr);
+                totalAuras   = auraCount2;
+            }
+        }
+
+        if (auraTablePtr && totalAuras > 0) {
+            uint32_t count = std::min(totalAuras, static_cast<uint32_t>(GameData::kMaxAuras));
+            for (uint32_t i = 0; i < count; ++i) {
+                uintptr_t entryAddr = auraTablePtr
+                    + static_cast<uintptr_t>(i) * WoWOffsets::auraStructSize
+                    + WoWOffsets::auraStructSpellIdOffset;
+                if (!IsReadableRange(entryAddr, sizeof(uint32_t))) break;
+                uint32_t sid = *reinterpret_cast<const uint32_t*>(entryAddr);
+                if (sid == 0) continue;
+                out.auras[out.auraCount++].spellId = sid;
+            }
+        }
+    } else {
+        out.playerHealth    = 0;
+        out.playerMaxHealth = 0;
+        out.playerLevel     = 0;
+        out.playerPower     = 0;
+        out.playerMaxPower  = 0;
+        out.castingSpellId  = 0;
+        out.channelSpellId  = 0;
+        out.auraCount       = 0;
+    }
+
+    // ---- Camera ----
+    // Chain: *(cameraBasePtrOffset) + cameraOffset1 -> ptr -> + cameraOffset2 -> camera struct
+    uintptr_t camPtr1 = ReadAbs<uint32_t>(WoWOffsets::cameraBasePtrOffset);
+    if (camPtr1) {
+        uintptr_t camPtr2Addr = camPtr1 + WoWOffsets::cameraOffset1;
+        if (IsReadableRange(camPtr2Addr, sizeof(uint32_t))) {
+            uintptr_t camPtr2 = *reinterpret_cast<const uint32_t*>(camPtr2Addr);
+            if (camPtr2) {
+                uintptr_t camStructAddr = camPtr2 + WoWOffsets::cameraOffset2;
+                if (IsReadableRange(camStructAddr, sizeof(uint32_t))) {
+                    uintptr_t camStruct = *reinterpret_cast<const uint32_t*>(camStructAddr);
+                    if (camStruct) {
+                        uintptr_t yawAddr   = camStruct + WoWOffsets::cameraYawOffset;
+                        uintptr_t pitchAddr = camStruct + WoWOffsets::cameraPitchOffset;
+                        if (IsReadableRange(yawAddr, sizeof(float)))
+                            out.cameraYaw = *reinterpret_cast<const float*>(yawAddr);
+                        if (IsReadableRange(pitchAddr, sizeof(float)))
+                            out.cameraPitch = *reinterpret_cast<const float*>(pitchAddr);
+                    }
+                }
+            }
+        }
+    }
 
     return true;
 }

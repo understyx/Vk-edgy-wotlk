@@ -232,24 +232,24 @@ constexpr uint32_t objectRotation          = 0x7A8;     // relative: float (faci
 // ---------------------------------------------------------------------------
 // Unit field descriptor offsets  (relative to UnitFields pointer, in bytes)
 // ---------------------------------------------------------------------------
-constexpr uint32_t unitFieldHealth         = 0x16 * 4;  // current health
-constexpr uint32_t unitFieldMaxHealth      = 0x1C * 4;  // max health
-constexpr uint32_t unitFieldLevel          = 0x22 * 4;  // unit level
-constexpr uint32_t unitFieldPowers         = 0x17 * 4;  // start of current power[7] array
-constexpr uint32_t unitFieldMaxPowers      = 0x1D * 4;  // start of max power[7] array
-constexpr uint32_t unitFieldEnergy         = 0x17 * 4;  // mana/rage/energy (index by power type)
-constexpr uint32_t unitFieldMaxEnergy      = 0x1D * 4;  // max mana/rage/energy
-constexpr uint32_t unitFieldMaxPower1      = 0x1D * 4;
-constexpr uint32_t unitFieldMaxPower2      = 0x1E * 4;
-constexpr uint32_t unitFieldMaxPower3      = 0x1F * 4;
-constexpr uint32_t unitFieldMaxPower4      = 0x20 * 4;
-constexpr uint32_t unitFieldMaxPower5      = 0x21 * 4;
-constexpr uint32_t unitFieldMaxPower6      = 0x22 * 4;
-constexpr uint32_t unitFieldMaxPower7      = 0x23 * 4;
-constexpr uint32_t unitFieldSummonedBy     = 0xC * 4;   // summoner GUID
-constexpr uint32_t unitFieldBytes0         = 0x24 * 4;  // class/race byte pack
-constexpr uint32_t unitFieldFlags          = 0x2E * 4;  // unit flags
-constexpr uint32_t unitFieldTargetGUID     = 0x10 * 4;  // current target GUID
+constexpr uint32_t unitFieldHealth         = 0x18 * 4;  // current health
+constexpr uint32_t unitFieldMaxHealth      = 0x20 * 4;  // max health
+constexpr uint32_t unitFieldLevel          = 0x36 * 4;  // unit level
+constexpr uint32_t unitFieldPowers         = 0x4C;      // start of current power[7] array
+constexpr uint32_t unitFieldMaxPowers      = 0x6C;      // start of max power[7] array
+constexpr uint32_t unitFieldEnergy         = 0x19 * 4;  // mana/rage/energy (index by power type)
+constexpr uint32_t unitFieldMaxEnergy      = 0x21 * 4;  // max mana/rage/energy
+constexpr uint32_t unitFieldMaxPower1      = 0x21 * 4;
+constexpr uint32_t unitFieldMaxPower2      = 0x22 * 4;
+constexpr uint32_t unitFieldMaxPower3      = 0x23 * 4;
+constexpr uint32_t unitFieldMaxPower4      = 0x24 * 4;
+constexpr uint32_t unitFieldMaxPower5      = 0x25 * 4;
+constexpr uint32_t unitFieldMaxPower6      = 0x26 * 4;
+constexpr uint32_t unitFieldMaxPower7      = 0x27 * 4;
+constexpr uint32_t unitFieldSummonedBy     = 0xE * 4;   // summoner GUID
+constexpr uint32_t unitFieldBytes0         = 0x5C;      // class/race byte pack
+constexpr uint32_t unitFieldFlags          = 0xEC;      // unit flags
+constexpr uint32_t unitFieldTargetGUID     = 0x12 * 4;
 constexpr uint32_t unitFieldPowerTypeByteFromDescriptor = 0x47; // power type byte in descriptor
 
 // ---------------------------------------------------------------------------

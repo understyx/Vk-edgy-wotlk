@@ -287,7 +287,7 @@ constexpr uint32_t unitChannelIdOffset     = 0xC20;     // relative: current cha
 // ---------------------------------------------------------------------------
 // Auras  (relative to unit base address)
 // ---------------------------------------------------------------------------
-constexpr uint32_t auraCount1Offset        = 0xDD6;     // relative: inline aura count; 0xFFFF or 0xFFFFFFFF means use dynamic table
+constexpr uint32_t auraCount1Offset        = 0xDD0;     // relative: inline aura count; 0xFFFFFFFF (-1) means use dynamic table
 constexpr uint32_t auraCount2Offset        = 0xC54;     // relative: dynamic aura count (table 2)
 constexpr uint32_t auraTable1Offset        = 0xC50;     // relative: start of inline aura table (direct address, not a pointer)
 constexpr uint32_t auraTable2Offset        = 0xC58;     // relative: pointer to dynamic aura table (dereference to get table base)

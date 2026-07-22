@@ -102,6 +102,10 @@ set(VKLAYER_SOURCES
     src/rmlui/VulkanRenderer.cpp
     src/rmlui/OverlayUI.cpp
     src/rmlui/WowDataModel.cpp
+    src/wowmemory/memory_utils.cpp
+    src/wowmemory/auras.cpp
+    src/wowmemory/unit_info.cpp
+    src/wowmemory/combat_log.cpp
     src/wowmemory/wowmemory.cpp
 )
 

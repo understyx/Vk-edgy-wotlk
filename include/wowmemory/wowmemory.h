@@ -111,6 +111,11 @@ struct GameData {
     AuraInfo    auras[kMaxAuras];     ///< Active auras on local player
     uint32_t    auraCount = 0;        ///< Number of valid entries in auras[]
 
+    // --- Target Auras ---
+    static constexpr size_t kMaxTargetAuras = 40;
+    AuraInfo    targetAuras[kMaxTargetAuras]; ///< Active auras on target
+    uint32_t    targetAuraCount = 0;          ///< Number of valid entries in targetAuras[]
+
     // --- Combat log (new events since last ReadGameData call) ---
     static constexpr size_t kMaxCombatLogEvents = 64;
     CombatLogEvent combatLogEvents[kMaxCombatLogEvents]; ///< New events this frame

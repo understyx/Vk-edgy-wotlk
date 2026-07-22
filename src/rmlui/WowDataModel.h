@@ -61,6 +61,10 @@ private:
     float       m_corpseX       = 0.0f;
     float       m_corpseY       = 0.0f;
     float       m_corpseZ       = 0.0f;
+
+    Rml::Vector<int>         m_playerAuras;
+    Rml::Vector<int>         m_targetAuras;
+    Rml::Vector<Rml::String> m_combatLogHistory;
 };
 
 } // namespace WoTLKGuiLayer

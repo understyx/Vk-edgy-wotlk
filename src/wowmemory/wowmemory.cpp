@@ -108,6 +108,80 @@ static std::string ReadSafeString(uintptr_t startAddr, size_t maxLen)
     return std::string(reinterpret_cast<const char*>(startAddr), len);
 }
 
+/// Helper to read active auras for any unit base pointer.
+static uint32_t ReadAurasForUnit(uintptr_t unitBase, AuraInfo* outAuras, size_t maxAuras)
+{
+    if (!unitBase) return 0;
+
+    constexpr uint32_t kAuraTableDynamic = 0xFFFFFFFF; // sentinel: use dynamic (table 2) path
+
+    // Inline lambda to read uint32 at relative offset from unitBase
+    auto readRelU32 = [&](uint32_t relOffset) -> uint32_t {
+        uintptr_t addr = unitBase + relOffset;
+        if (!IsReadableRange(addr, sizeof(uint32_t))) return 0u;
+        return *reinterpret_cast<const uint32_t*>(addr);
+    };
+
+    uint32_t auraCount1 = readRelU32(WoWOffsets::auraCount1Offset);
+    uintptr_t auraTablePtr = 0;
+    uint32_t  totalAuras   = 0;
+
+    if (auraCount1 == kAuraTableDynamic) {
+        // Dynamic table: pointer at auraTable2Offset, count at auraCount2Offset
+        totalAuras = readRelU32(WoWOffsets::auraCount2Offset);
+        uintptr_t tAddr = unitBase + WoWOffsets::auraTable2Offset;
+        if (IsReadableRange(tAddr, sizeof(uint32_t)))
+            auraTablePtr = *reinterpret_cast<const uint32_t*>(tAddr);
+    } else {
+        // Inline table: entries start directly at auraTable1Offset (no dereference)
+        totalAuras   = auraCount1;
+        auraTablePtr = unitBase + WoWOffsets::auraTable1Offset;
+    }
+
+    uint32_t count = 0;
+    if (auraTablePtr && totalAuras > 0) {
+        uint32_t limit = std::min(totalAuras, static_cast<uint32_t>(maxAuras));
+        for (uint32_t i = 0; i < limit; ++i) {
+            uintptr_t entryAddr = auraTablePtr
+                + static_cast<uintptr_t>(i) * WoWOffsets::auraStructSize
+                + WoWOffsets::auraStructSpellIdOffset;
+            if (!IsReadableRange(entryAddr, sizeof(uint32_t))) break;
+            uint32_t sid = *reinterpret_cast<const uint32_t*>(entryAddr);
+            if (sid == 0) continue;
+            outAuras[count++].spellId = sid;
+        }
+    }
+    return count;
+}
+
+/// Helper to find any object's base address by walking the Object Manager list.
+static uintptr_t GetObjectBaseByGUID(uint64_t targetGUID)
+{
+    if (targetGUID == 0) return 0;
+    uintptr_t connection = ReadAbs<uint32_t>(WoWOffsets::currentClientConnection);
+    if (!connection) return 0;
+
+    uintptr_t managerAddr = connection + WoWOffsets::currentManagerOffset;
+    uintptr_t manager = ReadAbs<uint32_t>(managerAddr);
+    if (!manager) return 0;
+
+    uintptr_t objAddr = manager + WoWOffsets::firstObjectOffset;
+    uintptr_t obj = ReadAbs<uint32_t>(objAddr);
+
+    size_t count = 0;
+    while (obj && (obj & 1u) == 0 && count < 5000) {
+        uintptr_t guidAddr = obj + WoWOffsets::objectGUID;
+        uint64_t currentGUID = ReadAbs<uint64_t>(guidAddr);
+        if (currentGUID == targetGUID) {
+            return obj;
+        }
+        uintptr_t nextAddr = obj + WoWOffsets::nextObjectOffset;
+        obj = ReadAbs<uint32_t>(nextAddr);
+        count++;
+    }
+    return 0;
+}
+
 // ---------------------------------------------------------------------------
 // GameDataReader — private static helpers
 // ---------------------------------------------------------------------------
@@ -252,43 +326,7 @@ bool GameDataReader::ReadGameData(GameData& out)
         out.channelSpellId = readRelU32(WoWOffsets::unitChannelIdOffset);
 
         // --- Auras ---
-        // WoW 3.3.5a maintains two aura tables.  The sentinel value kAuraTableDynamic at
-        // auraCount1Offset signals that the inline table is not in use and the
-        // dynamic (heap-allocated) table 2 should be read instead.
-        // Table 1: aura entries start directly at playerBase + auraTable1Offset
-        //          (direct address — no extra pointer dereference).
-        // Table 2: a pointer stored at auraTable2Offset must be dereferenced.
-        constexpr uint32_t kAuraTableDynamic = 0xFFFFFFFF; // sentinel: use dynamic (table 2) path
-        out.auraCount = 0;
-        uint32_t auraCount1 = readRelU32(WoWOffsets::auraCount1Offset);
-
-        uintptr_t auraTablePtr = 0;
-        uint32_t  totalAuras   = 0;
-
-        if (auraCount1 == kAuraTableDynamic) {
-            // Dynamic table: pointer at auraTable2Offset, count at auraCount2Offset
-            totalAuras = readRelU32(WoWOffsets::auraCount2Offset);
-            uintptr_t tAddr = playerBasePtr + WoWOffsets::auraTable2Offset;
-            if (IsReadableRange(tAddr, sizeof(uint32_t)))
-                auraTablePtr = *reinterpret_cast<const uint32_t*>(tAddr);
-        } else {
-            // Inline table: entries start directly at auraTable1Offset (no dereference)
-            totalAuras   = auraCount1;
-            auraTablePtr = playerBasePtr + WoWOffsets::auraTable1Offset;
-        }
-
-        if (auraTablePtr && totalAuras > 0) {
-            uint32_t count = std::min(totalAuras, static_cast<uint32_t>(GameData::kMaxAuras));
-            for (uint32_t i = 0; i < count; ++i) {
-                uintptr_t entryAddr = auraTablePtr
-                    + static_cast<uintptr_t>(i) * WoWOffsets::auraStructSize
-                    + WoWOffsets::auraStructSpellIdOffset;
-                if (!IsReadableRange(entryAddr, sizeof(uint32_t))) break;
-                uint32_t sid = *reinterpret_cast<const uint32_t*>(entryAddr);
-                if (sid == 0) continue;
-                out.auras[out.auraCount++].spellId = sid;
-            }
-        }
+        out.auraCount = ReadAurasForUnit(playerBasePtr, out.auras, GameData::kMaxAuras);
     } else {
         out.playerHealth    = 0;
         out.playerMaxHealth = 0;
@@ -298,6 +336,15 @@ bool GameDataReader::ReadGameData(GameData& out)
         out.castingSpellId  = 0;
         out.channelSpellId  = 0;
         out.auraCount       = 0;
+    }
+
+    // ---- Target Auras ----
+    out.targetAuraCount = 0;
+    if (out.targetGUID != 0) {
+        uintptr_t targetBasePtr = GetObjectBaseByGUID(out.targetGUID);
+        if (targetBasePtr) {
+            out.targetAuraCount = ReadAurasForUnit(targetBasePtr, out.targetAuras, GameData::kMaxTargetAuras);
+        }
     }
 
     // ---- Camera ----

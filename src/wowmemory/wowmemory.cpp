@@ -252,29 +252,28 @@ bool GameDataReader::ReadGameData(GameData& out)
         out.channelSpellId = readRelU32(WoWOffsets::unitChannelIdOffset);
 
         // --- Auras ---
-        // WoW maintains two aura tables; table 1 is used when the aura count
-        // stored at auraCount1Offset is non-zero, otherwise fall back to table 2.
+        // WoW 3.3.5a maintains two aura tables.  The sentinel value 0xFFFFFFFF at
+        // auraCount1Offset signals that the inline table is not in use and the
+        // dynamic (heap-allocated) table 2 should be read instead.
+        // Table 1: aura entries start directly at playerBase + auraTable1Offset
+        //          (direct address — no extra pointer dereference).
+        // Table 2: a pointer stored at auraTable2Offset must be dereferenced.
         out.auraCount = 0;
         uint32_t auraCount1 = readRelU32(WoWOffsets::auraCount1Offset);
-        uint32_t auraCount2 = readRelU32(WoWOffsets::auraCount2Offset);
 
         uintptr_t auraTablePtr = 0;
         uint32_t  totalAuras   = 0;
 
-        if (auraCount1 > 0) {
-            // Table 1: the pointer itself is stored inline at auraTable1Offset
-            uintptr_t tAddr = playerBasePtr + WoWOffsets::auraTable1Offset;
-            if (IsReadableRange(tAddr, sizeof(uint32_t))) {
-                auraTablePtr = *reinterpret_cast<const uint32_t*>(tAddr);
-                totalAuras   = auraCount1;
-            }
-        } else if (auraCount2 > 0) {
-            // Table 2: an external pointer stored at auraTable2Offset
+        if (auraCount1 == 0xFFFFFFFF) {
+            // Dynamic table: pointer at auraTable2Offset, count at auraCount2Offset
+            totalAuras = readRelU32(WoWOffsets::auraCount2Offset);
             uintptr_t tAddr = playerBasePtr + WoWOffsets::auraTable2Offset;
-            if (IsReadableRange(tAddr, sizeof(uint32_t))) {
+            if (IsReadableRange(tAddr, sizeof(uint32_t)))
                 auraTablePtr = *reinterpret_cast<const uint32_t*>(tAddr);
-                totalAuras   = auraCount2;
-            }
+        } else {
+            // Inline table: entries start directly at auraTable1Offset (no dereference)
+            totalAuras   = auraCount1;
+            auraTablePtr = playerBasePtr + WoWOffsets::auraTable1Offset;
         }
 
         if (auraTablePtr && totalAuras > 0) {
@@ -320,6 +319,97 @@ bool GameDataReader::ReadGameData(GameData& out)
                             out.cameraPitch = *reinterpret_cast<const float*>(pitchAddr);
                     }
                 }
+            }
+        }
+    }
+
+    // ---- Combat log (incremental read of new events since last call) ----
+    // Reads new entries from the tail-tracked linked list described in
+    // CombatLogReader (Python reference).  m_lastCombatLogNodeAddr remembers
+    // the last node we processed so each call only yields new events.
+    out.combatLogEventCount = 0;
+    {
+        uintptr_t managerAddr = static_cast<uintptr_t>(WoWOffsets::combatLogListManager);
+        uintptr_t headPtrAddr = managerAddr + WoWOffsets::combatLogListHeadOffset;
+        uintptr_t tailPtrAddr = managerAddr + WoWOffsets::combatLogListTailOffset;
+
+        uintptr_t headNode = 0;
+        uintptr_t tailNode = 0;
+
+        if (IsReadableRange(headPtrAddr, sizeof(uint32_t)))
+            headNode = *reinterpret_cast<const uint32_t*>(headPtrAddr);
+        if (IsReadableRange(tailPtrAddr, sizeof(uint32_t)))
+            tailNode = *reinterpret_cast<const uint32_t*>(tailPtrAddr);
+
+        if (tailNode != 0) {
+            uintptr_t nodeAddr = 0;
+
+            if (m_lastCombatLogNodeAddr == 0) {
+                // First call: start from the head of the list
+                nodeAddr = headNode;
+            } else if (m_lastCombatLogNodeAddr == tailNode) {
+                // Already at tail — nothing new
+                nodeAddr = 0;
+            } else {
+                // Advance past the last node we processed
+                uintptr_t nextAddr = m_lastCombatLogNodeAddr + WoWOffsets::combatLogEventNextOffset;
+                if (IsReadableRange(nextAddr, sizeof(uint32_t)))
+                    nodeAddr = *reinterpret_cast<const uint32_t*>(nextAddr);
+                else
+                    m_lastCombatLogNodeAddr = 0; // stale pointer, resync next frame
+            }
+
+            constexpr uint32_t kMaxPerFrame = static_cast<uint32_t>(GameData::kMaxCombatLogEvents);
+            uint32_t processed = 0;
+
+            while (nodeAddr != 0 && (nodeAddr & 1u) == 0 && processed < kMaxPerFrame) {
+                // Helper lambdas scoped to each node
+                auto readU32 = [&](uint32_t off) -> uint32_t {
+                    uintptr_t a = nodeAddr + off;
+                    if (!IsReadableRange(a, sizeof(uint32_t))) return 0u;
+                    return *reinterpret_cast<const uint32_t*>(a);
+                };
+                auto readI32 = [&](uint32_t off) -> int32_t {
+                    uintptr_t a = nodeAddr + off;
+                    if (!IsReadableRange(a, sizeof(int32_t))) return 0;
+                    return *reinterpret_cast<const int32_t*>(a);
+                };
+
+                CombatLogEvent& ev = out.combatLogEvents[out.combatLogEventCount++];
+                ev.timestamp           = readU32(WoWOffsets::combatLogEventTimestampOffset);
+                ev.eventTypeId         = readI32(WoWOffsets::combatLogNodeEventTypeOffset);
+                uint32_t srcLo         = readU32(WoWOffsets::combatLogNodeSrcGuidLowOffset);
+                uint32_t srcHi         = readU32(WoWOffsets::combatLogNodeSrcGuidHighOffset);
+                ev.sourceGuid          = (static_cast<uint64_t>(srcHi) << 32) | srcLo;
+                uint32_t dstLo         = readU32(WoWOffsets::combatLogNodeDstGuidLowOffset);
+                uint32_t dstHi         = readU32(WoWOffsets::combatLogNodeDstGuidHighOffset);
+                ev.destGuid            = (static_cast<uint64_t>(dstHi) << 32) | dstLo;
+                ev.amount              = readI32(WoWOffsets::combatLogNodeAmountOffset);
+                ev.overkillOrPowerType = readI32(WoWOffsets::combatLogNodeOverkillOffset);
+                ev.schoolMask          = readI32(WoWOffsets::combatLogNodeSchoolMaskOffset);
+                ev.absorbed            = readI32(WoWOffsets::combatLogNodeAbsorbedOffset);
+                ev.resisted            = readI32(WoWOffsets::combatLogNodeResistedOffset);
+                ev.blockedOrMissType   = readI32(WoWOffsets::combatLogNodeBlockedOffset);
+                ev.flags               = readU32(WoWOffsets::combatLogNodeFlagsOffset);
+
+                m_lastCombatLogNodeAddr = nodeAddr;
+                ++processed;
+
+                if (nodeAddr == tailNode) break;
+
+                // Advance to next node
+                uintptr_t nextAddr = nodeAddr + WoWOffsets::combatLogEventNextOffset;
+                if (!IsReadableRange(nextAddr, sizeof(uint32_t))) {
+                    m_lastCombatLogNodeAddr = 0;
+                    break;
+                }
+                uintptr_t nextNode = *reinterpret_cast<const uint32_t*>(nextAddr);
+                if (nextNode == nodeAddr) {
+                    // Corrupt list: self-pointer, bail out
+                    m_lastCombatLogNodeAddr = 0;
+                    break;
+                }
+                nodeAddr = nextNode;
             }
         }
     }

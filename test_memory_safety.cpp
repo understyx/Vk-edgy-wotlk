@@ -36,6 +36,8 @@ int main() {
     assert(data.corpseX == 0.0f);
     assert(data.corpseY == 0.0f);
     assert(data.corpseZ == 0.0f);
+    assert(data.auraCount == 0);
+    assert(data.combatLogEventCount == 0);
 
     std::cout << "All memory safety assertions passed successfully!\n";
     return 0;

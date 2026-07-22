@@ -287,12 +287,24 @@ constexpr uint32_t unitChannelIdOffset     = 0xC20;     // relative: current cha
 // ---------------------------------------------------------------------------
 // Auras  (relative to unit base address)
 // ---------------------------------------------------------------------------
-constexpr uint32_t auraCount1Offset        = 0xDD0;     // relative: inline aura count; 0xFFFFFFFF (-1) means use dynamic table
-constexpr uint32_t auraCount2Offset        = 0xC54;     // relative: dynamic aura count (table 2)
-constexpr uint32_t auraTable1Offset        = 0xC50;     // relative: start of inline aura table (direct address, not a pointer)
-constexpr uint32_t auraTable2Offset        = 0xC58;     // relative: pointer to dynamic aura table (dereference to get table base)
-constexpr uint32_t auraStructSize          = 0x18;      // size of one aura entry in bytes
-constexpr uint32_t auraStructSpellIdOffset = 0x8;       // relative within aura entry: spell id
+constexpr uint32_t auraCount1Offset           = 0xDD0;  // relative: inline aura count; 0xFFFFFFFF (-1) means use dynamic table
+constexpr uint32_t auraCount2Offset           = 0xC54;  // relative: dynamic aura count (table 2)
+constexpr uint32_t auraTable1Offset           = 0xC50;  // relative: start of inline aura table (direct address, not a pointer)
+constexpr uint32_t auraTable2Offset           = 0xC58;  // relative: pointer to dynamic aura table (dereference to get table base)
+constexpr uint32_t auraStructSize             = 0x18;   // size of one aura entry in bytes
+// Aura entry field offsets (relative to the start of one aura entry)
+// Layout (WotLK 3.3.5a build 12340):
+//   +0x00  uint64  casterGuid       — GUID of the unit that applied the aura
+//   +0x08  uint32  spellId          — spell identifier
+//   +0x0C  uint32  slot/flags       — visual slot and flags
+//   +0x10  uint8   stackCount       — number of stacks/charges (1 for non-stacking auras)
+//   +0x11  uint8   [padding]
+//   +0x12  uint16  [padding]
+//   +0x14  uint32  expiryTime       — game-tick timestamp when aura expires; 0 = no expiry
+constexpr uint32_t auraStructCasterGuidOffset  = 0x00;  // relative within aura entry: caster GUID (uint64)
+constexpr uint32_t auraStructSpellIdOffset     = 0x08;  // relative within aura entry: spell id
+constexpr uint32_t auraStructStackCountOffset  = 0x10;  // relative within aura entry: stack/charge count (uint8)
+constexpr uint32_t auraStructExpiryTimeOffset  = 0x14;  // relative within aura entry: expiry game-tick (uint32; 0 = permanent)
 
 // ---------------------------------------------------------------------------
 // Combat log

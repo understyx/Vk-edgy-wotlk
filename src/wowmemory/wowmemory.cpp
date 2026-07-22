@@ -145,24 +145,44 @@ static uint32_t ReadAurasForUnit(uintptr_t unitBase, AuraInfo* outAuras, size_t 
 
     uint32_t count = 0;
     if (auraTablePtr && totalAuras > 0) {
-        // Safe debug logging to help validate structure offsets
-        printf("[WoWMemory] Aura count=%d table=%p\n",
-               static_cast<int>(auraCount1),
-               reinterpret_cast<void*>(auraTablePtr));
-
         uint32_t limit = std::min(totalAuras, static_cast<uint32_t>(maxAuras));
         for (uint32_t i = 0; i < limit; ++i) {
-            uintptr_t entryAddr = auraTablePtr
-                + static_cast<uintptr_t>(i) * WoWOffsets::auraStructSize
-                + WoWOffsets::auraStructSpellIdOffset;
-            if (!IsReadableRange(entryAddr, sizeof(uint32_t))) {
-                printf("[WoWMemory]   [%02u] (unreadable address %p)\n", i, reinterpret_cast<void*>(entryAddr));
-                break;
-            }
-            uint32_t sid = *reinterpret_cast<const uint32_t*>(entryAddr);
-            printf("[WoWMemory]   [%02u] spell=%u\n", i, sid);
+            uintptr_t entryBase = auraTablePtr
+                + static_cast<uintptr_t>(i) * WoWOffsets::auraStructSize;
+
+            uintptr_t spellIdAddr = entryBase + WoWOffsets::auraStructSpellIdOffset;
+            if (!IsReadableRange(spellIdAddr, sizeof(uint32_t))) break;
+
+            uint32_t sid = *reinterpret_cast<const uint32_t*>(spellIdAddr);
             if (sid == 0) continue;
-            outAuras[count++].spellId = sid;
+
+            AuraInfo& info = outAuras[count++];
+            info.spellId = sid;
+
+            // Caster GUID — two consecutive uint32s starting at the entry base
+            uintptr_t casterAddr = entryBase + WoWOffsets::auraStructCasterGuidOffset;
+            if (IsReadableRange(casterAddr, sizeof(uint64_t))) {
+                info.casterGuid = *reinterpret_cast<const uint64_t*>(casterAddr);
+            } else {
+                info.casterGuid = 0;
+            }
+
+            // Stack / charge count
+            uintptr_t stackAddr = entryBase + WoWOffsets::auraStructStackCountOffset;
+            if (IsReadableRange(stackAddr, sizeof(uint8_t))) {
+                uint8_t sc = *reinterpret_cast<const uint8_t*>(stackAddr);
+                info.stackCount = sc > 0 ? sc : 1u;
+            } else {
+                info.stackCount = 1;
+            }
+
+            // Expiry timestamp (game ticks, ms)
+            uintptr_t expiryAddr = entryBase + WoWOffsets::auraStructExpiryTimeOffset;
+            if (IsReadableRange(expiryAddr, sizeof(uint32_t))) {
+                info.expiryTimeMs = *reinterpret_cast<const uint32_t*>(expiryAddr);
+            } else {
+                info.expiryTimeMs = 0;
+            }
         }
     }
     return count;
@@ -194,6 +214,24 @@ static uintptr_t GetObjectBaseByGUID(uint64_t targetGUID)
         count++;
     }
     return 0;
+}
+
+// ---------------------------------------------------------------------------
+// GameDataReader — GetAllAuras public API
+// ---------------------------------------------------------------------------
+
+uint32_t GameDataReader::GetAllAuras(uintptr_t unitBase, AuraInfo* outAuras, size_t maxAuras)
+{
+    if (!unitBase || !outAuras || maxAuras == 0) return 0;
+    return ReadAurasForUnit(unitBase, outAuras, maxAuras);
+}
+
+uint32_t GameDataReader::GetAllAurasForGUID(uint64_t unitGUID, AuraInfo* outAuras, size_t maxAuras)
+{
+    if (!unitGUID || !outAuras || maxAuras == 0) return 0;
+    uintptr_t base = GetObjectBaseByGUID(unitGUID);
+    if (!base) return 0;
+    return ReadAurasForUnit(base, outAuras, maxAuras);
 }
 
 // ---------------------------------------------------------------------------

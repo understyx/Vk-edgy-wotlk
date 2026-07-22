@@ -21,10 +21,16 @@ namespace WoWMemory {
 
 /**
  * @struct AuraInfo
- * @brief Minimal descriptor for a single active aura on the local player.
+ * @brief Descriptor for a single active aura on a WoW unit.
+ *
+ * Fields correspond to the in-memory aura entry layout for WotLK 3.3.5a.
+ * See WoWOffsets::auraStruct* for the byte offsets used to populate each field.
  */
 struct AuraInfo {
-    uint32_t spellId = 0;  ///< Spell ID of the aura
+    uint32_t spellId     = 0;  ///< Spell ID of the aura
+    uint64_t casterGuid  = 0;  ///< GUID of the unit that applied the aura (0 = unknown)
+    uint8_t  stackCount  = 1;  ///< Number of stacks or charges (1 for non-stacking auras)
+    uint32_t expiryTimeMs = 0; ///< Game-tick timestamp (ms) when the aura expires; 0 = permanent
 };
 
 /**
@@ -144,6 +150,34 @@ public:
      * @return true on success; false if a read would fault (null pointer guard).
      */
     bool ReadGameData(GameData& outData);
+
+    /**
+     * @brief Read all active auras for a unit at the given base address.
+     *
+     * Equivalent to the HB/Styx WoWUnit::GetAllAuras() API.  Walks the unit's
+     * inline or dynamic aura table and fills @p outAuras with up to @p maxAuras
+     * entries.  Each entry contains the spell ID, caster GUID, stack count and
+     * expiry timestamp.
+     *
+     * @param unitBase   Absolute base address of the CGUnit_C object.
+     * @param outAuras   Caller-supplied array to receive the results.
+     * @param maxAuras   Capacity of @p outAuras.
+     * @return Number of auras written (0 if the unit pointer is invalid).
+     */
+    static uint32_t GetAllAuras(uintptr_t unitBase, AuraInfo* outAuras, size_t maxAuras);
+
+    /**
+     * @brief Read all active auras for the unit identified by @p unitGUID.
+     *
+     * Walks the Object Manager to resolve the GUID to a unit base pointer, then
+     * delegates to GetAllAuras().  Returns 0 if the GUID cannot be found.
+     *
+     * @param unitGUID   64-bit GUID of the target unit.
+     * @param outAuras   Caller-supplied array to receive the results.
+     * @param maxAuras   Capacity of @p outAuras.
+     * @return Number of auras written.
+     */
+    static uint32_t GetAllAurasForGUID(uint64_t unitGUID, AuraInfo* outAuras, size_t maxAuras);
 
 private:
     /// Read a bounded null-terminated string directly from an absolute address.

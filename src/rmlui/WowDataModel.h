@@ -57,6 +57,20 @@ private:
     int         m_isIndoor      = 0;
     int         m_playerIsIngame= 0;
     int         m_playerHealth  = 0;
+    int         m_playerMaxHealth = 0;
+    int         m_playerLevel     = 0;
+    int         m_playerPower     = 0;
+    int         m_playerMaxPower  = 0;
+    int         m_playerPowerType = 0;
+
+    int         m_targetHealth    = 0;
+    int         m_targetMaxHealth = 0;
+    int         m_targetPower     = 0;
+    int         m_targetMaxPower  = 0;
+    int         m_targetPowerType = 0;
+    int         m_targetLevel     = 0;
+    Rml::String m_targetName;
+
     int         m_tickCount     = 0;
     float       m_corpseX       = 0.0f;
     float       m_corpseY       = 0.0f;

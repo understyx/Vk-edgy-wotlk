@@ -24,8 +24,22 @@ bool WowDataModel::Initialise(Rml::Context* context)
     c.Bind("zoneID",        &m_zoneID);
 
     // Player state
-    c.Bind("playerHealth",   &m_playerHealth);
-    c.Bind("playerIsIngame", &m_playerIsIngame);
+    c.Bind("playerHealth",    &m_playerHealth);
+    c.Bind("playerMaxHealth", &m_playerMaxHealth);
+    c.Bind("playerLevel",     &m_playerLevel);
+    c.Bind("playerPower",     &m_playerPower);
+    c.Bind("playerMaxPower",  &m_playerMaxPower);
+    c.Bind("playerPowerType", &m_playerPowerType);
+    c.Bind("playerIsIngame",  &m_playerIsIngame);
+
+    // Target state
+    c.Bind("targetHealth",    &m_targetHealth);
+    c.Bind("targetMaxHealth", &m_targetMaxHealth);
+    c.Bind("targetPower",     &m_targetPower);
+    c.Bind("targetMaxPower",  &m_targetMaxPower);
+    c.Bind("targetPowerType", &m_targetPowerType);
+    c.Bind("targetLevel",     &m_targetLevel);
+    c.Bind("targetName",      &m_targetName);
 
     // Game state
     c.Bind("gameState",   &m_gameState);
@@ -84,6 +98,10 @@ void WowDataModel::Update(const WoWMemory::GameData& data)
         m_subZoneText = data.subZoneText;
         m_handle.DirtyVariable("subZoneText");
     }
+    if (m_targetName != data.targetName) {
+        m_targetName = data.targetName;
+        m_handle.DirtyVariable("targetName");
+    }
 
     // Numeric / bool fields — keep internal mirrors as int
     DIRTY_IF_CHANGED(m_mapID,          "mapID",          static_cast<int>(data.mapID));
@@ -94,6 +112,19 @@ void WowDataModel::Update(const WoWMemory::GameData& data)
     DIRTY_IF_CHANGED(m_isIndoor,       "isIndoor",       data.isIndoor     ? 1 : 0);
     DIRTY_IF_CHANGED(m_playerIsIngame, "playerIsIngame", data.playerIsIngame ? 1 : 0);
     DIRTY_IF_CHANGED(m_playerHealth,   "playerHealth",   static_cast<int>(data.playerHealth));
+    DIRTY_IF_CHANGED(m_playerMaxHealth,"playerMaxHealth",static_cast<int>(data.playerMaxHealth));
+    DIRTY_IF_CHANGED(m_playerLevel,    "playerLevel",    static_cast<int>(data.playerLevel));
+    DIRTY_IF_CHANGED(m_playerPower,     "playerPower",     static_cast<int>(data.playerPower));
+    DIRTY_IF_CHANGED(m_playerMaxPower,  "playerMaxPower",  static_cast<int>(data.playerMaxPower));
+    DIRTY_IF_CHANGED(m_playerPowerType, "playerPowerType", static_cast<int>(data.playerPowerType));
+
+    DIRTY_IF_CHANGED(m_targetHealth,    "targetHealth",    static_cast<int>(data.targetHealth));
+    DIRTY_IF_CHANGED(m_targetMaxHealth, "targetMaxHealth", static_cast<int>(data.targetMaxHealth));
+    DIRTY_IF_CHANGED(m_targetPower,     "targetPower",     static_cast<int>(data.targetPower));
+    DIRTY_IF_CHANGED(m_targetMaxPower,  "targetMaxPower",  static_cast<int>(data.targetMaxPower));
+    DIRTY_IF_CHANGED(m_targetPowerType, "targetPowerType", static_cast<int>(data.targetPowerType));
+    DIRTY_IF_CHANGED(m_targetLevel,     "targetLevel",     static_cast<int>(data.targetLevel));
+
     DIRTY_IF_CHANGED(m_tickCount,      "tickCount",      static_cast<int>(data.tickCount));
 
     if (m_corpseX != data.corpseX) { m_corpseX = data.corpseX; m_handle.DirtyVariable("corpseX"); }

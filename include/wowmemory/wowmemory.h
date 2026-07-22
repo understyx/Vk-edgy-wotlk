@@ -78,6 +78,15 @@ struct GameData {
     uint8_t     playerPowerType = 0;  ///< Power type byte (0=mana,1=rage,3=energy,…)
     uint8_t     playerComboPoints = 0; ///< Combo points
     bool        playerIsIngame  = false;
+
+    // --- Target state ---
+    uint32_t    targetHealth    = 0;  ///< Current target health
+    uint32_t    targetMaxHealth = 0;  ///< Maximum target health
+    uint32_t    targetPower     = 0;  ///< Current target power
+    uint32_t    targetMaxPower  = 0;  ///< Maximum target power
+    uint8_t     targetPowerType = 0;  ///< Target power type byte
+    uint32_t    targetLevel     = 0;  ///< Target level
+    std::string targetName;           ///< Target name
     bool        isLoading       = false;
     bool        worldLoaded     = false;
     bool        isIndoor        = false;

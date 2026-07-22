@@ -93,6 +93,22 @@ void OverlayUI::Shutdown()
         m_document->Close();
         m_document = nullptr;
     }
+    if (m_playerDoc) {
+        m_playerDoc->Close();
+        m_playerDoc = nullptr;
+    }
+    if (m_targetDoc) {
+        m_targetDoc->Close();
+        m_targetDoc = nullptr;
+    }
+    if (m_partyDoc) {
+        m_partyDoc->Close();
+        m_partyDoc = nullptr;
+    }
+    if (m_raidDoc) {
+        m_raidDoc->Close();
+        m_raidDoc = nullptr;
+    }
     if (m_context) {
         m_dataModel.Shutdown();
         Rml::RemoveContext(m_context->GetName());
@@ -132,6 +148,22 @@ void OverlayUI::ResizeSwapchain(const std::vector<VkImage>& images,
         m_document->Close();
         m_document = nullptr;
     }
+    if (m_playerDoc) {
+        m_playerDoc->Close();
+        m_playerDoc = nullptr;
+    }
+    if (m_targetDoc) {
+        m_targetDoc->Close();
+        m_targetDoc = nullptr;
+    }
+    if (m_partyDoc) {
+        m_partyDoc->Close();
+        m_partyDoc = nullptr;
+    }
+    if (m_raidDoc) {
+        m_raidDoc->Close();
+        m_raidDoc = nullptr;
+    }
     if (m_context) {
         m_dataModel.Shutdown();
         Rml::RemoveContext(m_context->GetName());
@@ -160,6 +192,38 @@ void OverlayUI::ResizeSwapchain(const std::vector<VkImage>& images,
         return;
     }
     m_document->Show();
+
+    // Load Player Unit Frame
+    m_playerDoc = m_context->LoadDocument("unit/player.rml");
+    if (!m_playerDoc) {
+        fprintf(stderr, "[RmlUi] Failed to load unit/player.rml\n");
+    } else {
+        m_playerDoc->Show();
+    }
+
+    // Load Target Unit Frame
+    m_targetDoc = m_context->LoadDocument("unit/target.rml");
+    if (!m_targetDoc) {
+        fprintf(stderr, "[RmlUi] Failed to load unit/target.rml\n");
+    } else {
+        m_targetDoc->Show();
+    }
+
+    // Load Party Frames
+    m_partyDoc = m_context->LoadDocument("unit/party.rml");
+    if (!m_partyDoc) {
+        fprintf(stderr, "[RmlUi] Failed to load unit/party.rml\n");
+    } else {
+        m_partyDoc->Show();
+    }
+
+    // Load Raid Frames
+    m_raidDoc = m_context->LoadDocument("unit/raid.rml");
+    if (!m_raidDoc) {
+        fprintf(stderr, "[RmlUi] Failed to load unit/raid.rml\n");
+    } else {
+        m_raidDoc->Show();
+    }
 
     // Recreate sync objects for the new image count
     DestroySyncObjects();

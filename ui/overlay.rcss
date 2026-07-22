@@ -3,28 +3,28 @@ body
     margin: 0;
     padding: 0;
     font-family: "DejaVu Sans";
-    font-size: 13px;
+    font-size: 13dp;
     color: #ffffff;
 }
 
 #overlay
 {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 330px;
+    top: 20dp;
+    right: 20dp;
+    width: 330dp;
     background-color: rgba(10, 24, 48, 0.85); /* Semi-transparent blue */
-    border-width: 2px;
+    border-width: 2dp;
     border-style: solid;
     border-color: #1e3a8a; /* Glowing dark blue border */
-    border-radius: 8px;
-    padding: 12px 15px;
+    border-radius: 8dp;
+    padding: 12dp 15dp;
 }
 
 h1
 {
-    margin: 0 0 10px 0;
-    font-size: 16px;
+    margin: 0 0 10dp 0;
+    font-size: 16dp;
     font-weight: bold;
     color: #60a5fa; /* Light blue */
     text-align: center;
@@ -32,19 +32,19 @@ h1
 
 h2
 {
-    margin: 10px 0 4px 0;
-    font-size: 12px;
+    margin: 10dp 0 4dp 0;
+    font-size: 12dp;
     font-weight: bold;
     color: #93c5fd; /* Soft light blue */
-    border-bottom-width: 1px;
+    border-bottom-width: 1dp;
     border-bottom-color: #1e3a8a;
     border-bottom-style: solid;
-    padding-bottom: 2px;
+    padding-bottom: 2dp;
 }
 
 .stat
 {
-    margin: 3px 0;
+    margin: 3dp 0;
     display: inline-block;
     width: 100%;
 }
@@ -53,7 +53,7 @@ h2
 {
     color: #94a3b8; /* Cool gray */
     display: inline-block;
-    width: 160px;
+    width: 160dp;
 }
 
 .value
@@ -76,19 +76,19 @@ h2
 
 #combat-log
 {
-    height: 110px;
+    height: 110dp;
     background-color: rgba(15, 23, 42, 0.6);
-    border-width: 1px;
+    border-width: 1dp;
     border-style: solid;
     border-color: #1e293b;
-    padding: 4px;
-    font-size: 10px;
+    padding: 4dp;
+    font-size: 10dp;
     overflow-y: hidden;
 }
 
 .log-entry
 {
     color: #cbd5e1;
-    margin-bottom: 2px;
+    margin-bottom: 2dp;
     white-space: nowrap;
 }

@@ -6,25 +6,25 @@
     <style>
         body {
             position: absolute;
-            left: 20px;
-            top: 480px;
-            width: 140px;
-            height: 180px;
+            left: 20dp;
+            top: 480dp;
+            width: 140dp;
+            height: 180dp;
         }
         .raid-container {
             display: flex;
             flex-wrap: wrap;
-            width: 130px;
-            gap: 4px;
+            width: 130dp;
+            gap: 4dp;
         }
         .raid-member {
-            width: 38px;
-            height: 30px;
+            width: 38dp;
+            height: 30dp;
             background-color: rgba(15, 15, 18, 0.88);
-            border-width: 1px;
+            border-width: 1dp;
             border-style: solid;
             border-color: #333333;
-            border-radius: 2px;
+            border-radius: 2dp;
             position: relative;
         }
         .raid-hp {
@@ -36,10 +36,10 @@
         }
         .raid-name {
             position: absolute;
-            top: 4px;
+            top: 4dp;
             width: 100%;
             text-align: center;
-            font-size: 8px;
+            font-size: 8dp;
             font-weight: bold;
             color: #ffffff;
         }

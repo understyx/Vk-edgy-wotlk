@@ -1,28 +1,28 @@
 /* Shared Unit Frame styles */
 .unit-frame {
     position: absolute;
-    width: 250px;
+    width: 250dp;
     background-color: rgba(10, 10, 12, 0.88);
-    border-width: 2px;
+    border-width: 2dp;
     border-style: solid;
     border-color: #3d3d3d;
-    border-radius: 6px;
-    padding: 8px;
+    border-radius: 6dp;
+    padding: 8dp;
 }
 
 .unit-header {
-    margin-bottom: 4px;
+    margin-bottom: 4dp;
 }
 
 .unit-name {
-    font-size: 14px;
+    font-size: 14dp;
     font-weight: bold;
     color: #ffffff;
     float: left;
 }
 
 .unit-level {
-    font-size: 12px;
+    font-size: 12dp;
     font-weight: bold;
     color: #ffd100; /* WoW gold */
     float: right;
@@ -30,15 +30,15 @@
 
 /* Bar styles */
 .bar-container {
-    height: 18px;
+    height: 18dp;
     background-color: #0d0d0d;
-    border-width: 1px;
+    border-width: 1dp;
     border-style: solid;
     border-color: #3a3a3a;
     position: relative;
-    border-radius: 3px;
+    border-radius: 3dp;
     overflow: hidden;
-    margin-bottom: 4px;
+    margin-bottom: 4dp;
     clear: both;
 }
 
@@ -48,10 +48,10 @@
 
 .bar-text {
     position: absolute;
-    top: 2px;
+    top: 2dp;
     width: 100%;
     text-align: center;
-    font-size: 11px;
+    font-size: 11dp;
     font-weight: bold;
     color: #ffffff;
 }
@@ -80,26 +80,26 @@
 
 /* Aura list */
 .auras-container {
-    margin-top: 4px;
+    margin-top: 4dp;
     clear: both;
 }
 
 .aura-title {
-    font-size: 10px;
+    font-size: 10dp;
     color: #888888;
-    margin-bottom: 2px;
+    margin-bottom: 2dp;
 }
 
 .aura-badge {
     display: inline-block;
     background-color: #1a1a24;
-    border-width: 1px;
+    border-width: 1dp;
     border-style: solid;
     border-color: #4a4a6a;
-    border-radius: 4px;
-    padding: 1px 4px;
-    margin-right: 3px;
-    margin-bottom: 3px;
-    font-size: 9px;
+    border-radius: 4dp;
+    padding: 1dp 4dp;
+    margin-right: 3dp;
+    margin-bottom: 3dp;
+    font-size: 9dp;
     color: #ffd100;
 }

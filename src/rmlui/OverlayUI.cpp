@@ -178,6 +178,17 @@ void OverlayUI::ResizeSwapchain(const std::vector<VkImage>& images,
         return;
     }
 
+    // Calculate dynamic scaling ratio based on resolution (base height = 1080.0f)
+    // Make the UI 1.35x bigger by default on 1080p, and scale up proportionally on 4k.
+    float baseHeight = 1080.0f;
+    float currentHeight = static_cast<float>(extent.height);
+    float scaleFactor = (currentHeight > 0.0f) ? (currentHeight / baseHeight) : 1.0f;
+    float dpRatio = 1.35f * scaleFactor;
+    m_context->SetDensityIndependentPixelRatio(dpRatio);
+
+    fprintf(stdout, "[RmlUi] Context scale ratio configured: %.2f (resolution: %ux%u)\n",
+            dpRatio, extent.width, extent.height);
+
     // Initialise the WoW data model so HTML documents can bind to it
     m_dataModel.Initialise(m_context);
 

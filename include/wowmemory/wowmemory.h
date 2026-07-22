@@ -28,6 +28,28 @@ struct AuraInfo {
 };
 
 /**
+ * @struct CombatLogEvent
+ * @brief A single combat log entry read from the WoW in-process linked list.
+ *
+ * Layout based on AppendLinkedListNode / handle_combat_log_entry disassembly
+ * for WotLK 3.3.5a (build 12340).  Fields marked as "unknown" in the Python
+ * reference are omitted; only fields with confirmed semantics are included.
+ */
+struct CombatLogEvent {
+    uint32_t timestamp           = 0;  ///< Game timestamp (ms since boot)
+    int32_t  eventTypeId         = 0;  ///< Internal event type identifier
+    uint64_t sourceGuid          = 0;  ///< GUID of the event source
+    uint64_t destGuid            = 0;  ///< GUID of the event destination
+    int32_t  amount              = 0;  ///< Primary amount (damage / heal / energize)
+    int32_t  overkillOrPowerType = 0;  ///< Overkill / overheal amount, or power type
+    int32_t  schoolMask          = 0;  ///< Spell school bitmask
+    int32_t  absorbed            = 0;  ///< Absorbed amount
+    int32_t  resisted            = 0;  ///< Resisted amount
+    int32_t  blockedOrMissType   = 0;  ///< Blocked amount or miss type
+    uint32_t flags               = 0;  ///< Bit 0 = critical hit; bit 1/2 = TBD
+};
+
+/**
  * @struct GameData
  * @brief Snapshot of WoW game state read from process memory.
  *
@@ -89,6 +111,11 @@ struct GameData {
     AuraInfo    auras[kMaxAuras];     ///< Active auras on local player
     uint32_t    auraCount = 0;        ///< Number of valid entries in auras[]
 
+    // --- Combat log (new events since last ReadGameData call) ---
+    static constexpr size_t kMaxCombatLogEvents = 64;
+    CombatLogEvent combatLogEvents[kMaxCombatLogEvents]; ///< New events this frame
+    uint32_t       combatLogEventCount = 0;              ///< Number of valid entries
+
     // --- Camera ---
     float       cameraYaw   = 0.0f;  ///< Camera yaw in radians
     float       cameraPitch = 0.0f;  ///< Camera pitch in radians
@@ -119,6 +146,9 @@ private:
 
     /// Read a null-terminated string through a char* pointer stored at absAddr.
     static std::string ReadIndirectString(uint32_t ptrAddr, size_t maxLen = 64);
+
+    /// Tracks the last combat log node address read, for incremental reading.
+    uintptr_t m_lastCombatLogNodeAddr = 0;
 };
 
 /**

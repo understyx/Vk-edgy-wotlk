@@ -287,10 +287,10 @@ constexpr uint32_t unitChannelIdOffset     = 0xC20;     // relative: current cha
 // ---------------------------------------------------------------------------
 // Auras  (relative to unit base address)
 // ---------------------------------------------------------------------------
-constexpr uint32_t auraCount1Offset        = 0xDD0;     // relative: aura count (table 1)
-constexpr uint32_t auraCount2Offset        = 0xC54;     // relative: aura count (table 2)
-constexpr uint32_t auraTable1Offset        = 0xC50;     // relative: ptr to aura table 1
-constexpr uint32_t auraTable2Offset        = 0xC58;     // relative: ptr to aura table 2
+constexpr uint32_t auraCount1Offset        = 0xDD0;     // relative: inline aura count; 0xFFFFFFFF means use dynamic table
+constexpr uint32_t auraCount2Offset        = 0xC54;     // relative: dynamic aura count (table 2)
+constexpr uint32_t auraTable1Offset        = 0xC50;     // relative: start of inline aura table (direct address, not a pointer)
+constexpr uint32_t auraTable2Offset        = 0xC58;     // relative: pointer to dynamic aura table (dereference to get table base)
 constexpr uint32_t auraStructSize          = 0x18;      // size of one aura entry in bytes
 constexpr uint32_t auraStructSpellIdOffset = 0x8;       // relative within aura entry: spell id
 
@@ -305,6 +305,22 @@ constexpr uint32_t combatLogEventNextOffset    = 0x4;   // relative within node:
 constexpr uint32_t combatLogEventTimestampOffset = 0x8; // relative within node: timestamp
 constexpr uint32_t combatLogTimestampSource    = 0x00CD76AC;
 constexpr uint32_t combatLogNextUnprocessedNode= 0x00CA1394;
+
+// Combat log node field offsets (relative to node base address)
+// Layout derived from AppendLinkedListNode / handle_combat_log_entry disassembly.
+constexpr uint32_t combatLogNodeEventTypeOffset   = 0x0C; // int32: event type id
+constexpr uint32_t combatLogNodeSrcGuidLowOffset  = 0x18; // uint32: source GUID low
+constexpr uint32_t combatLogNodeSrcGuidHighOffset = 0x1C; // uint32: source GUID high
+constexpr uint32_t combatLogNodeDstGuidLowOffset  = 0x30; // uint32: dest GUID low
+constexpr uint32_t combatLogNodeDstGuidHighOffset = 0x34; // uint32: dest GUID high
+constexpr uint32_t combatLogNodeAmountOffset      = 0x5C; // int32: primary amount (damage/heal/energize)
+constexpr uint32_t combatLogNodeOverkillOffset    = 0x60; // int32: overkill / overheal / power type
+constexpr uint32_t combatLogNodeSchoolMaskOffset  = 0x64; // int32: school mask
+constexpr uint32_t combatLogNodeAbsorbedOffset    = 0x68; // int32: absorbed amount
+constexpr uint32_t combatLogNodeResistedOffset    = 0x6C; // int32: resisted amount
+constexpr uint32_t combatLogNodeBlockedOffset     = 0x70; // int32: blocked amount / miss type
+constexpr uint32_t combatLogNodeFlagsOffset       = 0x74; // uint32: flags (bit 0 = crit)
+constexpr uint32_t combatLogNodeSize              = 0x78; // total size of one node in bytes (for validation/debug)
 
 // ---------------------------------------------------------------------------
 // Camera

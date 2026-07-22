@@ -29,7 +29,7 @@ include(FetchContent)
 FetchContent_Declare(
     RmlUi
     GIT_REPOSITORY https://github.com/mikke89/RmlUi.git
-    GIT_TAG        6.0
+    GIT_TAG        6.2
     GIT_SHALLOW    TRUE
 )
 

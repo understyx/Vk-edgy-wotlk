@@ -40,12 +40,12 @@ bool WowDataModel::Initialise(Rml::Context* context)
     c.Bind("corpseZ", &m_corpseZ);
 
     // Register arrays for auras and combat log
-    c.RegisterArray<std::vector<int>>();
-    c.RegisterArray<std::vector<Rml::String>>();
+    c.RegisterArray<Rml::Vector<int>>();
+    c.RegisterArray<Rml::Vector<Rml::String>>();
 
     c.Bind("playerAuras", &m_playerAuras);
     c.Bind("targetAuras", &m_targetAuras);
-    c.Bind("combatLog",   &m_combatLogHistory);
+    c.Bind("combatLog", &m_combatLogHistory);
 
     m_handle = c.GetModelHandle();
     return true;

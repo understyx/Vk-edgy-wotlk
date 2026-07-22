@@ -37,17 +37,20 @@
 
         <h2>Player Auras</h2>
         <div class="auras">
-            <span class="aura" data-for="aura : playerAuras">{{aura}}</span>
+            <div data-for="aura: playerAuras">
+                {{aura}}
+            </div>
         </div>
+
 
         <h2>Target Auras</h2>
         <div class="auras">
-            <span class="aura" data-for="aura : targetAuras">{{aura}}</span>
+            <span class="aura" data-for="aura: targetAuras">{{aura}}</span>
         </div>
 
         <h2>Combat Log</h2>
         <div id="combat-log">
-            <div class="log-entry" data-for="entry : combatLog">{{entry}}</div>
+            <div class="log-entry" data-for="entry: combatLog">{{entry}}</div>
         </div>
     </div>
 </body>

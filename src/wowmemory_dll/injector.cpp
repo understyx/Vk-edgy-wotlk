@@ -93,7 +93,7 @@ int main()
     // Wait up to 30 seconds for WoW.exe to launch
     DWORD pid = 0;
     for (int i = 0; i < 30; ++i) {
-        pid = GetProcessIdByName("WoW.exe");
+        pid = GetProcessIdByName("Wow.exe");
         if (pid == 0) {
             pid = GetProcessIdByName("wow.exe");
         }

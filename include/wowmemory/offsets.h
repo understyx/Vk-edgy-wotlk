@@ -320,7 +320,7 @@ constexpr uint32_t combatLogNodeAbsorbedOffset    = 0x68; // int32: absorbed amo
 constexpr uint32_t combatLogNodeResistedOffset    = 0x6C; // int32: resisted amount
 constexpr uint32_t combatLogNodeBlockedOffset     = 0x70; // int32: blocked amount / miss type
 constexpr uint32_t combatLogNodeFlagsOffset       = 0x74; // uint32: flags (bit 0 = crit)
-constexpr uint32_t combatLogNodeSize              = 0x78; // total size of one node in bytes
+constexpr uint32_t combatLogNodeSize              = 0x78; // total size of one node in bytes (for validation/debug)
 
 // ---------------------------------------------------------------------------
 // Camera

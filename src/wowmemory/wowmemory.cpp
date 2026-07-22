@@ -252,19 +252,20 @@ bool GameDataReader::ReadGameData(GameData& out)
         out.channelSpellId = readRelU32(WoWOffsets::unitChannelIdOffset);
 
         // --- Auras ---
-        // WoW 3.3.5a maintains two aura tables.  The sentinel value 0xFFFFFFFF at
+        // WoW 3.3.5a maintains two aura tables.  The sentinel value kAuraTableDynamic at
         // auraCount1Offset signals that the inline table is not in use and the
         // dynamic (heap-allocated) table 2 should be read instead.
         // Table 1: aura entries start directly at playerBase + auraTable1Offset
         //          (direct address — no extra pointer dereference).
         // Table 2: a pointer stored at auraTable2Offset must be dereferenced.
+        constexpr uint32_t kAuraTableDynamic = 0xFFFFFFFF; // sentinel: use dynamic (table 2) path
         out.auraCount = 0;
         uint32_t auraCount1 = readRelU32(WoWOffsets::auraCount1Offset);
 
         uintptr_t auraTablePtr = 0;
         uint32_t  totalAuras   = 0;
 
-        if (auraCount1 == 0xFFFFFFFF) {
+        if (auraCount1 == kAuraTableDynamic) {
             // Dynamic table: pointer at auraTable2Offset, count at auraCount2Offset
             totalAuras = readRelU32(WoWOffsets::auraCount2Offset);
             uintptr_t tAddr = playerBasePtr + WoWOffsets::auraTable2Offset;
@@ -362,6 +363,7 @@ bool GameDataReader::ReadGameData(GameData& out)
             constexpr uint32_t kMaxPerFrame = static_cast<uint32_t>(GameData::kMaxCombatLogEvents);
             uint32_t processed = 0;
 
+            // Odd address bits (nodeAddr & 1) indicate an invalid/misaligned node pointer.
             while (nodeAddr != 0 && (nodeAddr & 1u) == 0 && processed < kMaxPerFrame) {
                 // Helper lambdas scoped to each node
                 auto readU32 = [&](uint32_t off) -> uint32_t {
@@ -405,7 +407,8 @@ bool GameDataReader::ReadGameData(GameData& out)
                 }
                 uintptr_t nextNode = *reinterpret_cast<const uint32_t*>(nextAddr);
                 if (nextNode == nodeAddr) {
-                    // Corrupt list: self-pointer, bail out
+                    // Corrupt list: self-pointer detected; bail out and resync next frame.
+                    // (No logging here — see m_lastCombatLogNodeAddr reset as the recovery signal.)
                     m_lastCombatLogNodeAddr = 0;
                     break;
                 }

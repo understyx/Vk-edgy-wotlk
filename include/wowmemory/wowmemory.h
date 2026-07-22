@@ -16,6 +16,13 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
+
+#ifndef _WIN32
+#include <mutex>
+#include <thread>
+#include <atomic>
+#endif
 
 namespace WoWMemory {
 
@@ -136,6 +143,17 @@ struct GameData {
 };
 
 /**
+ * @brief Serializes a GameData structure into a raw byte vector.
+ */
+void SerializeGameData(const GameData& data, std::vector<uint8_t>& outBuf);
+
+/**
+ * @brief Deserializes a raw byte vector into a GameData structure.
+ * @return true on success, false if the buffer is malformed/truncated.
+ */
+bool DeserializeGameData(const std::vector<uint8_t>& buf, GameData& outData);
+
+/**
  * @class GameDataReader
  * @brief Reads live game data from WoW process memory.
  *
@@ -144,8 +162,13 @@ struct GameData {
  */
 class GameDataReader {
 public:
+#ifdef _WIN32
     GameDataReader() = default;
     ~GameDataReader() = default;
+#else
+    GameDataReader();
+    ~GameDataReader();
+#endif
 
     /**
      * @brief Read current game data from memory.
@@ -163,6 +186,17 @@ private:
 
     /// Tracks the last combat log node address read, for incremental reading.
     uintptr_t m_lastCombatLogNodeAddr = 0;
+
+#ifndef _WIN32
+    std::thread m_serverThread;
+    std::atomic<bool> m_stopServer{false};
+    std::mutex m_cacheMutex;
+    GameData m_cachedData;
+    int m_serverFd = -1;
+    int m_clientFd = -1;
+
+    void ServerLoop();
+#endif
 };
 
 /**

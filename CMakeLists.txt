@@ -172,6 +172,31 @@ endif()
 install(DIRECTORY ui/ DESTINATION lib/ui)
 
 # ===========================================================================
+# 32-bit Windows DLL for WoW process memory reading
+# ===========================================================================
+add_custom_target(WowMemoryDLL
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/dist
+    # Compile wowmemory.dll
+    COMMAND i686-w64-mingw32-g++ -std=c++20 -shared -fPIC -O2
+            -I${CMAKE_CURRENT_SOURCE_DIR}/include
+            -I${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory_dll/wowmemory_dll.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/memory_utils.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/auras.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/unit_info.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/combat_log.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/wowmemory.cpp
+            -lws2_32 -o ${CMAKE_CURRENT_BINARY_DIR}/dist/wowmemory.dll
+    # Compile injector.exe
+    COMMAND i686-w64-mingw32-g++ -std=c++20 -O2
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory_dll/injector.cpp
+            -o ${CMAKE_CURRENT_BINARY_DIR}/dist/injector.exe
+    COMMENT "Compiling 32-bit Windows DLL (wowmemory.dll) and Injector (injector.exe)"
+)
+
+add_dependencies(vklayer_understyx_wotlk WowMemoryDLL)
+
+# ===========================================================================
 # Deploy built artifacts to local dist directory
 # ===========================================================================
 set(DIST_DIR ${CMAKE_CURRENT_BINARY_DIR}/dist)

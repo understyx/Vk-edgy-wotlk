@@ -7,6 +7,8 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 namespace WoTLKGuiLayer {
 
@@ -118,6 +120,22 @@ static void TryInitRmlUi(const vkroots::VkDeviceDispatch& dispatch)
     gOverlay.rmlInitialized = true;
     fprintf(stdout, "[WoTLKLayer] RmlUi overlay initialised (%ux%u)\n",
             gOverlay.extent.width, gOverlay.extent.height);
+
+    // Launch the 32-bit Windows DLL injector in the background using a double-fork detach.
+    pid_t pid = fork();
+    if (pid == 0) {
+        pid_t pid2 = fork();
+        if (pid2 == 0) {
+            std::string injector = GetLayerDir() + "/injector.exe";
+            execlp("wine", "wine", injector.c_str(), nullptr);
+            _exit(1);
+        }
+        _exit(0);
+    }
+    if (pid > 0) {
+        int status;
+        waitpid(pid, &status, 0);
+    }
 }
 
 // ============================================================================

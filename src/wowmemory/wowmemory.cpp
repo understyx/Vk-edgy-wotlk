@@ -171,7 +171,7 @@ static uint32_t ReadAurasForUnit(uintptr_t unitBase, AuraInfo* outAuras, size_t 
             uintptr_t stackAddr = entryBase + WoWOffsets::auraStructStackCountOffset;
             if (IsReadableRange(stackAddr, sizeof(uint8_t))) {
                 uint8_t sc = *reinterpret_cast<const uint8_t*>(stackAddr);
-                info.stackCount = sc > 0 ? sc : 1u;
+                info.stackCount = sc > 0 ? sc : static_cast<uint8_t>(1);
             } else {
                 info.stackCount = 1;
             }

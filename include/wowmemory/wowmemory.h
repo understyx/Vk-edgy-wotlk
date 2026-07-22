@@ -154,7 +154,7 @@ public:
     /**
      * @brief Read all active auras for a unit at the given base address.
      *
-     * Equivalent to the HB/Styx WoWUnit::GetAllAuras() API.  Walks the unit's
+     * Equivalent to the HB/Styx WoWUnit::GetAllAuras() API. Walks the unit's
      * inline or dynamic aura table and fills @p outAuras with up to @p maxAuras
      * entries.  Each entry contains the spell ID, caster GUID, stack count and
      * expiry timestamp.

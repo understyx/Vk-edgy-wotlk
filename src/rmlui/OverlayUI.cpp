@@ -447,6 +447,8 @@ VkSemaphore OverlayUI::Render(VkQueue                         queue,
                                uint32_t                        imageIndex,
                                const std::vector<VkSemaphore>& waitSems)
 {
+    fprintf(stderr, "[WoTLKLayer] Rendering overlay image %u\n", imageIndex);
+
     if (!m_ready || !m_context || imageIndex >= m_overlaySemaphores.size())
         return VK_NULL_HANDLE;
 

@@ -39,6 +39,53 @@ int main() {
     assert(data.auraCount == 0);
     assert(data.combatLogEventCount == 0);
 
+    // Serialization & Deserialization Test
+    std::cout << "Testing serialization and deserialization...\n";
+    WoWMemory::GameData testData;
+    testData.playerName = "TestPlayer";
+    testData.realmName = "TestRealm";
+    testData.localPlayerGUID = 1234567890ULL;
+    testData.mapID = 571;
+    testData.playerHealth = 15000;
+    testData.playerMaxHealth = 20000;
+    testData.playerIsIngame = true;
+    testData.playerPosX = 123.45f;
+    testData.playerPosY = 678.90f;
+    testData.playerPosZ = 12.34f;
+    testData.auraCount = 2;
+    testData.auras[0].spellId = 123;
+    testData.auras[1].spellId = 456;
+    testData.combatLogEventCount = 1;
+    testData.combatLogEvents[0].timestamp = 99999;
+    testData.combatLogEvents[0].amount = 500;
+
+    std::vector<uint8_t> buffer;
+    WoWMemory::SerializeGameData(testData, buffer);
+    assert(!buffer.empty());
+
+    WoWMemory::GameData deserializedData;
+    bool deserial_success = WoWMemory::DeserializeGameData(buffer, deserializedData);
+    assert(deserial_success == true);
+
+    assert(deserializedData.playerName == "TestPlayer");
+    assert(deserializedData.realmName == "TestRealm");
+    assert(deserializedData.localPlayerGUID == 1234567890ULL);
+    assert(deserializedData.mapID == 571);
+    assert(deserializedData.playerHealth == 15000);
+    assert(deserializedData.playerMaxHealth == 20000);
+    assert(deserializedData.playerIsIngame == true);
+    assert(deserializedData.playerPosX == 123.45f);
+    assert(deserializedData.playerPosY == 678.90f);
+    assert(deserializedData.playerPosZ == 12.34f);
+    assert(deserializedData.auraCount == 2);
+    assert(deserializedData.auras[0].spellId == 123);
+    assert(deserializedData.auras[1].spellId == 456);
+    assert(deserializedData.combatLogEventCount == 1);
+    assert(deserializedData.combatLogEvents[0].timestamp == 99999);
+    assert(deserializedData.combatLogEvents[0].amount == 500);
+
+    std::cout << "Serialization & Deserialization assertions passed successfully!\n";
+
     std::cout << "All memory safety assertions passed successfully!\n";
     return 0;
 }

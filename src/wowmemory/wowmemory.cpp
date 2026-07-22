@@ -11,6 +11,7 @@
 #include "wowmemory/wowmemory.h"
 #include "wowmemory/offsets.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -203,15 +204,16 @@ bool GameDataReader::ReadGameData(GameData& out)
                 if (!IsReadableRange(addr, sizeof(uint32_t))) return 0u;
                 return *reinterpret_cast<const uint32_t*>(addr);
             };
+            auto readUF64 = [&](uint32_t relOffset) -> uint64_t {
+                uintptr_t addr = unitFieldsAddr + relOffset;
+                if (!IsReadableRange(addr, sizeof(uint64_t))) return 0ull;
+                return *reinterpret_cast<const uint64_t*>(addr);
+            };
 
             out.playerHealth    = readUF32(WoWOffsets::unitFieldHealth);
             out.playerMaxHealth = readUF32(WoWOffsets::unitFieldMaxHealth);
             out.playerLevel     = readUF32(WoWOffsets::unitFieldLevel);
-            out.targetGUID      = [&]() -> uint64_t {
-                uintptr_t addr = unitFieldsAddr + WoWOffsets::unitFieldTargetGUID;
-                if (!IsReadableRange(addr, sizeof(uint64_t))) return 0ull;
-                return *reinterpret_cast<const uint64_t*>(addr);
-            }();
+            out.targetGUID      = readUF64(WoWOffsets::unitFieldTargetGUID);
 
             // Power type is stored as a byte in the object descriptor struct.
             uintptr_t descriptorAddr = 0;
@@ -228,8 +230,9 @@ bool GameDataReader::ReadGameData(GameData& out)
 
             // Read current and max power for the player's power type.
             // UNIT_FIELD_POWERS and UNIT_FIELD_MAXPOWERS are arrays of 7 uint32s.
+            constexpr uint32_t kPowerTypeCount = 7;
             uint8_t pt = out.playerPowerType;
-            if (pt < 7) {
+            if (pt < kPowerTypeCount) {
                 uintptr_t curAddr = unitFieldsAddr + WoWOffsets::unitFieldPowers + pt * sizeof(uint32_t);
                 uintptr_t maxAddr = unitFieldsAddr + WoWOffsets::unitFieldMaxPowers + pt * sizeof(uint32_t);
                 if (IsReadableRange(curAddr, sizeof(uint32_t)))
@@ -275,8 +278,7 @@ bool GameDataReader::ReadGameData(GameData& out)
         }
 
         if (auraTablePtr && totalAuras > 0) {
-            uint32_t count = totalAuras < GameData::kMaxAuras
-                           ? totalAuras : static_cast<uint32_t>(GameData::kMaxAuras);
+            uint32_t count = std::min(totalAuras, static_cast<uint32_t>(GameData::kMaxAuras));
             for (uint32_t i = 0; i < count; ++i) {
                 uintptr_t entryAddr = auraTablePtr
                     + static_cast<uintptr_t>(i) * WoWOffsets::auraStructSize

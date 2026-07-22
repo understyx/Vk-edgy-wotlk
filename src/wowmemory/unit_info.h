@@ -2,16 +2,13 @@
 #define WOWMEMORY_UNIT_INFO_H
 
 #include "wowmemory/wowmemory.h"
+#include "wowmemory/object_manager.h"
+#include "wowmemory/objects/wow_object.h"
+#include "wowmemory/objects/wow_unit.h"
+#include "wowmemory/objects/wow_player.h"
 #include <cstdint>
 
 namespace WoWMemory {
-
-/**
- * @brief Find any object's base address by walking the Object Manager list.
- * @param targetGUID The GUID of the object to search for.
- * @return The base address of the object, or 0 if not found.
- */
-uintptr_t GetObjectBaseByGUID(uint64_t targetGUID);
 
 /**
  * @brief Helper to read player's unit fields (descriptor array) and fill corresponding fields.

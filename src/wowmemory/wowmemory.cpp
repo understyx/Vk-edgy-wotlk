@@ -14,6 +14,8 @@
 #include "wowmemory/auras.h"
 #include "wowmemory/unit_info.h"
 #include "wowmemory/combat_log.h"
+#include "wowmemory/object_manager.h"
+#include "wowmemory/objects/wow_player.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -89,28 +91,20 @@ bool GameDataReader::ReadGameData(GameData& out)
     }
 
     if (playerBasePtr && IsReadableRange(playerBasePtr, 4)) {
+        WoWPlayer player(playerBasePtr);
+
         // --- Position ---
         ReadPlayerPosition(playerBasePtr, out);
 
-        // --- Health (legacy path kept, now also via unit fields) ---
-        if (IsReadableRange(playerBasePtr + WoWOffsets::playerHealth, sizeof(uint32_t))) {
-            out.playerHealth = *reinterpret_cast<const uint32_t*>(
-                playerBasePtr + WoWOffsets::playerHealth);
-        } else {
-            out.playerHealth = 0;
-        }
+        // --- Health ---
+        out.playerHealth = player.GetHealth();
 
         // --- Unit fields (descriptor array) ---
         ReadPlayerUnitFields(playerBasePtr, out);
 
         // --- Casting / channeling ---
-        auto readRelU32 = [&](uint32_t relOffset) -> uint32_t {
-            uintptr_t addr = playerBasePtr + relOffset;
-            if (!IsReadableRange(addr, sizeof(uint32_t))) return 0u;
-            return *reinterpret_cast<const uint32_t*>(addr);
-        };
-        out.castingSpellId = readRelU32(WoWOffsets::unitCastingIdOffset);
-        out.channelSpellId = readRelU32(WoWOffsets::unitChannelIdOffset);
+        out.castingSpellId = player.GetCastingSpellId();
+        out.channelSpellId = player.GetChannelSpellId();
 
         // --- Auras ---
         out.auraCount = ReadAurasForUnit(playerBasePtr, out.auras, GameData::kMaxAuras);

@@ -107,6 +107,15 @@ set(VKLAYER_SOURCES
     src/wowmemory/unit_info.cpp
     src/wowmemory/combat_log.cpp
     src/wowmemory/wowmemory.cpp
+    src/wowmemory/object_manager.cpp
+    src/wowmemory/objects/wow_object.cpp
+    src/wowmemory/objects/wow_unit.cpp
+    src/wowmemory/objects/wow_player.cpp
+    src/wowmemory/objects/wow_gameobject.cpp
+    src/wowmemory/objects/wow_item.cpp
+    src/wowmemory/objects/wow_container.cpp
+    src/wowmemory/objects/wow_dynamic_object.cpp
+    src/wowmemory/objects/wow_corpse.cpp
 )
 
 add_library(vklayer_understyx_wotlk SHARED ${VKLAYER_SOURCES})

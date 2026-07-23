@@ -5,6 +5,14 @@
 
 namespace WoTLKGuiLayer {
 
+struct RmlGroupMember {
+    Rml::String guid;
+    Rml::String name;
+    int health = 0;
+    int maxHealth = 0;
+    Rml::Vector<int> auras;
+};
+
 /**
  * @class WowDataModel
  * @brief Binds live WoW game data to an RmlUi data model named "wow".
@@ -69,6 +77,10 @@ private:
     int         m_numRaidMembers  = 0;
     int         m_raidDifficulty  = 0;
     int         m_activeQuestsCount = 0;
+
+    // Active Group Members
+    Rml::Vector<RmlGroupMember> m_partyMembers;
+    Rml::Vector<RmlGroupMember> m_raidMembers;
 
     int         m_targetHealth    = 0;
     int         m_targetMaxHealth = 0;

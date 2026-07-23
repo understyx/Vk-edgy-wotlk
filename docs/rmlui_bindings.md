@@ -74,6 +74,8 @@ These coordinates represent where the player's corpse is located (useful for cor
 | `playerAuras` | `Vector<int>` | `m_playerAuras` | Array of Spell IDs representing the active auras (buffs/debuffs) on the player. |
 | `targetAuras` | `Vector<int>` | `m_targetAuras` | Array of Spell IDs representing the active auras on the player's current target. |
 | `combatLog` | `Vector<String>` | `m_combatLogHistory` | A list of formatted combat log events captured since loading. |
+| `partyMembers` | `Vector<GroupMember>` | `m_partyMembers` | Array of party members, each with fields: `guid` (String), `name` (String), `health` (int), `maxHealth` (int), and `auras` (Vector<int>). |
+| `raidMembers` | `Vector<GroupMember>` | `m_raidMembers` | Array of raid members, each with fields: `guid` (String), `name` (String), `health` (int), `maxHealth` (int), and `auras` (Vector<int>). |
 
 ---
 
@@ -132,6 +134,23 @@ Use the `data-for` attribute to repeat an element for each item in an array (lik
 <div class="combat-log">
     <div class="log-row" data-for="event : combatLog">
         {{ event }}
+    </div>
+</div>
+```
+
+#### Iterating Party Members (with health and auras):
+```html
+<div class="party-list">
+    <div class="member-frame" data-for="member : partyMembers">
+        <span class="name">{{ member.name }}</span>
+        <span class="hp">{{ member.health }} / {{ member.maxHealth }}</span>
+
+        <!-- Member Buffs -->
+        <div class="member-buffs">
+            <span class="buff" data-for="spellId : member.auras">
+                {{ spellId }}
+            </span>
+        </div>
     </div>
 </div>
 ```

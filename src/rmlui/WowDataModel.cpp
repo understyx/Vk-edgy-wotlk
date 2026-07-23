@@ -68,6 +68,19 @@ bool WowDataModel::Initialise(Rml::Context* context)
     c.Bind("targetAuras", &m_targetAuras);
     c.Bind("combatLog", &m_combatLogHistory);
 
+    // Register custom group member struct & arrays for RmlUi data model
+    if (auto member_handle = c.RegisterStruct<RmlGroupMember>()) {
+        member_handle.RegisterMember("guid", &RmlGroupMember::guid);
+        member_handle.RegisterMember("name", &RmlGroupMember::name);
+        member_handle.RegisterMember("health", &RmlGroupMember::health);
+        member_handle.RegisterMember("maxHealth", &RmlGroupMember::maxHealth);
+        member_handle.RegisterMember("auras", &RmlGroupMember::auras);
+    }
+    c.RegisterArray<Rml::Vector<RmlGroupMember>>();
+
+    c.Bind("partyMembers", &m_partyMembers);
+    c.Bind("raidMembers", &m_raidMembers);
+
     m_handle = c.GetModelHandle();
     return true;
 }
@@ -183,6 +196,61 @@ void WowDataModel::Update(const WoWMemory::GameData& data)
             m_targetAuras.push_back(static_cast<int>(data.targetAuras[i].spellId));
         }
         m_handle.DirtyVariable("targetAuras");
+    }
+
+    // Update Party & Raid list bindings
+    auto updateGroupList = [](Rml::Vector<RmlGroupMember>& rmlList, const std::vector<WoWMemory::GroupMemberData>& rawList) -> bool {
+        bool changed = false;
+        if (rmlList.size() != rawList.size()) {
+            changed = true;
+        } else {
+            for (size_t i = 0; i < rawList.size(); ++i) {
+                const auto& raw = rawList[i];
+                const auto& rml = rmlList[i];
+                char rawGuidBuf[32];
+                snprintf(rawGuidBuf, sizeof(rawGuidBuf), "0x%llX", (unsigned long long)raw.guid);
+                if (rml.guid != rawGuidBuf ||
+                    rml.name != raw.name ||
+                    rml.health != static_cast<int>(raw.health) ||
+                    rml.maxHealth != static_cast<int>(raw.maxHealth) ||
+                    rml.auras.size() != raw.auraCount) {
+                    changed = true;
+                    break;
+                }
+                for (uint32_t j = 0; j < raw.auraCount; ++j) {
+                    if (rml.auras[j] != static_cast<int>(raw.auras[j].spellId)) {
+                        changed = true;
+                        break;
+                    }
+                }
+                if (changed) break;
+            }
+        }
+
+        if (changed) {
+            rmlList.clear();
+            for (const auto& raw : rawList) {
+                RmlGroupMember rml;
+                char guidBuf[32];
+                snprintf(guidBuf, sizeof(guidBuf), "0x%llX", (unsigned long long)raw.guid);
+                rml.guid = guidBuf;
+                rml.name = raw.name;
+                rml.health = static_cast<int>(raw.health);
+                rml.maxHealth = static_cast<int>(raw.maxHealth);
+                for (uint32_t j = 0; j < raw.auraCount; ++j) {
+                    rml.auras.push_back(static_cast<int>(raw.auras[j].spellId));
+                }
+                rmlList.push_back(rml);
+            }
+        }
+        return changed;
+    };
+
+    if (updateGroupList(m_partyMembers, data.partyMembersList)) {
+        m_handle.DirtyVariable("partyMembers");
+    }
+    if (updateGroupList(m_raidMembers, data.raidMembersList)) {
+        m_handle.DirtyVariable("raidMembers");
     }
 
     // Update Combat Log History

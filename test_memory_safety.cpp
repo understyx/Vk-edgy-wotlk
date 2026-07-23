@@ -43,6 +43,8 @@ int main() {
     assert(data.numRaidMembers == 0);
     assert(data.raidDifficulty == 0);
     assert(data.activeQuestsCount == 0);
+    assert(data.partyMembersList.empty());
+    assert(data.raidMembersList.empty());
 
     // Serialization & Deserialization Test
     std::cout << "Testing serialization and deserialization...\n";
@@ -66,6 +68,27 @@ int main() {
     testData.numRaidMembers = 25;
     testData.raidDifficulty = 3;
     testData.activeQuestsCount = 10;
+
+    // Add group members test data
+    WoWMemory::GroupMemberData m1;
+    m1.guid = 1111ULL;
+    m1.name = "PartyMember1";
+    m1.health = 8000;
+    m1.maxHealth = 10000;
+    m1.auraCount = 1;
+    m1.auras[0].spellId = 999;
+    testData.partyMembersList.push_back(m1);
+
+    WoWMemory::GroupMemberData r1;
+    r1.guid = 2222ULL;
+    r1.name = "RaidMember1";
+    r1.health = 12000;
+    r1.maxHealth = 15000;
+    r1.auraCount = 2;
+    r1.auras[0].spellId = 888;
+    r1.auras[1].spellId = 777;
+    testData.raidMembersList.push_back(r1);
+
     testData.combatLogEvents[0].timestamp = 99999;
     testData.combatLogEvents[0].amount = 500;
 
@@ -96,6 +119,24 @@ int main() {
     assert(deserializedData.numRaidMembers == 25);
     assert(deserializedData.raidDifficulty == 3);
     assert(deserializedData.activeQuestsCount == 10);
+
+    assert(deserializedData.partyMembersList.size() == 1);
+    assert(deserializedData.partyMembersList[0].guid == 1111ULL);
+    assert(deserializedData.partyMembersList[0].name == "PartyMember1");
+    assert(deserializedData.partyMembersList[0].health == 8000);
+    assert(deserializedData.partyMembersList[0].maxHealth == 10000);
+    assert(deserializedData.partyMembersList[0].auraCount == 1);
+    assert(deserializedData.partyMembersList[0].auras[0].spellId == 999);
+
+    assert(deserializedData.raidMembersList.size() == 1);
+    assert(deserializedData.raidMembersList[0].guid == 2222ULL);
+    assert(deserializedData.raidMembersList[0].name == "RaidMember1");
+    assert(deserializedData.raidMembersList[0].health == 12000);
+    assert(deserializedData.raidMembersList[0].maxHealth == 15000);
+    assert(deserializedData.raidMembersList[0].auraCount == 2);
+    assert(deserializedData.raidMembersList[0].auras[0].spellId == 888);
+    assert(deserializedData.raidMembersList[0].auras[1].spellId == 777);
+
     assert(deserializedData.combatLogEvents[0].timestamp == 99999);
     assert(deserializedData.combatLogEvents[0].amount == 500);
 

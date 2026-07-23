@@ -116,6 +116,15 @@ set(VKLAYER_SOURCES
     src/wowmemory/objects/wow_container.cpp
     src/wowmemory/objects/wow_dynamic_object.cpp
     src/wowmemory/objects/wow_corpse.cpp
+    src/wowmemory/client/c_data_store.cpp
+    src/wowmemory/client/wow_client_services.cpp
+    src/wowmemory/client/wow_console.cpp
+    src/wowmemory/client/wow_world.cpp
+    src/wowmemory/client/wow_camera.cpp
+    src/wowmemory/client/helper.cpp
+    src/wowmemory/client/wow_party.cpp
+    src/wowmemory/client/wow_raid.cpp
+    src/wowmemory/client/wow_quest.cpp
 )
 
 add_library(vklayer_understyx_wotlk SHARED ${VKLAYER_SOURCES})
@@ -185,45 +194,59 @@ install(DIRECTORY ui/ DESTINATION lib/ui)
 # ===========================================================================
 # 32-bit Windows DLL for WoW process memory reading
 # ===========================================================================
-add_custom_target(WowMemoryDLL
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/dist
-    # Compile wowmemory.dll
-    COMMAND i686-w64-mingw32-g++ -std=c++20 -shared -fPIC -O2
-        -static
-        -static-libgcc
-        -static-libstdc++
-        -I${CMAKE_CURRENT_SOURCE_DIR}/include
-        -I${CMAKE_CURRENT_SOURCE_DIR}/src
-        -I${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory
-        -I${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory_dll/wowmemory_dll.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/memory_utils.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/auras.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/unit_info.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/combat_log.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/wowmemory.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/object_manager.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_object.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_unit.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_player.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_game_object.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_item.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_container.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_dynamic_object.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_corpse.cpp
-        -lws2_32
-        -o ${CMAKE_CURRENT_BINARY_DIR}/dist/wowmemory.dll
-    # Compile injector.exe
-    COMMAND i686-w64-mingw32-g++ -std=c++20 -O2
-        -static
-        -static-libgcc
-        -static-libstdc++
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory_dll/injector.cpp
-        -o ${CMAKE_CURRENT_BINARY_DIR}/dist/injector.exe
-    COMMENT "Compiling 32-bit Windows DLL (wowmemory.dll) and Injector (injector.exe)"
-)
+find_program(MINGW_GXX i686-w64-mingw32-g++)
 
-add_dependencies(vklayer_understyx_wotlk WowMemoryDLL)
+if(MINGW_GXX)
+    add_custom_target(WowMemoryDLL
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/dist
+        # Compile wowmemory.dll
+        COMMAND ${MINGW_GXX} -std=c++20 -shared -fPIC -O2
+            -static
+            -static-libgcc
+            -static-libstdc++
+            -I${CMAKE_CURRENT_SOURCE_DIR}/include
+            -I${CMAKE_CURRENT_SOURCE_DIR}/src
+            -I${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory
+            -I${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory_dll/wowmemory_dll.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/memory_utils.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/auras.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/unit_info.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/combat_log.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/wowmemory.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/object_manager.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_object.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_unit.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_player.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_game_object.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_item.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_container.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_dynamic_object.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_corpse.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/client/c_data_store.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/client/wow_client_services.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/client/wow_console.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/client/wow_world.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/client/wow_camera.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/client/helper.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/client/wow_party.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/client/wow_raid.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/client/wow_quest.cpp
+            -lws2_32
+            -o ${CMAKE_CURRENT_BINARY_DIR}/dist/wowmemory.dll
+        # Compile injector.exe
+        COMMAND ${MINGW_GXX} -std=c++20 -O2
+            -static
+            -static-libgcc
+            -static-libstdc++
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory_dll/injector.cpp
+            -o ${CMAKE_CURRENT_BINARY_DIR}/dist/injector.exe
+        COMMENT "Compiling 32-bit Windows DLL (wowmemory.dll) and Injector (injector.exe)"
+    )
+    add_dependencies(vklayer_understyx_wotlk WowMemoryDLL)
+else()
+    message(WARNING "i686-w64-mingw32-g++ compiler not found. wowmemory.dll and injector.exe will not be built.")
+endif()
 
 # ===========================================================================
 # Deploy built artifacts to local dist directory

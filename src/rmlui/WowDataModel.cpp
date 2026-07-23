@@ -32,6 +32,13 @@ bool WowDataModel::Initialise(Rml::Context* context)
     c.Bind("playerPowerType", &m_playerPowerType);
     c.Bind("playerIsIngame",  &m_playerIsIngame);
 
+    // Party / Raid / Quest metrics
+    c.Bind("numPartyMembers",   &m_numPartyMembers);
+    c.Bind("partyDifficulty",   &m_partyDifficulty);
+    c.Bind("numRaidMembers",    &m_numRaidMembers);
+    c.Bind("raidDifficulty",    &m_raidDifficulty);
+    c.Bind("activeQuestsCount", &m_activeQuestsCount);
+
     // Target state
     c.Bind("targetHealth",    &m_targetHealth);
     c.Bind("targetMaxHealth", &m_targetMaxHealth);
@@ -60,6 +67,19 @@ bool WowDataModel::Initialise(Rml::Context* context)
     c.Bind("playerAuras", &m_playerAuras);
     c.Bind("targetAuras", &m_targetAuras);
     c.Bind("combatLog", &m_combatLogHistory);
+
+    // Register custom group member struct & arrays for RmlUi data model
+    if (auto member_handle = c.RegisterStruct<RmlGroupMember>()) {
+        member_handle.RegisterMember("guid", &RmlGroupMember::guid);
+        member_handle.RegisterMember("name", &RmlGroupMember::name);
+        member_handle.RegisterMember("health", &RmlGroupMember::health);
+        member_handle.RegisterMember("maxHealth", &RmlGroupMember::maxHealth);
+        member_handle.RegisterMember("auras", &RmlGroupMember::auras);
+    }
+    c.RegisterArray<Rml::Vector<RmlGroupMember>>();
+
+    c.Bind("partyMembers", &m_partyMembers);
+    c.Bind("raidMembers", &m_raidMembers);
 
     m_handle = c.GetModelHandle();
     return true;
@@ -118,6 +138,13 @@ void WowDataModel::Update(const WoWMemory::GameData& data)
     DIRTY_IF_CHANGED(m_playerMaxPower,  "playerMaxPower",  static_cast<int>(data.playerMaxPower));
     DIRTY_IF_CHANGED(m_playerPowerType, "playerPowerType", static_cast<int>(data.playerPowerType));
 
+    // Party / Raid / Quest metrics
+    DIRTY_IF_CHANGED(m_numPartyMembers,   "numPartyMembers",   static_cast<int>(data.numPartyMembers));
+    DIRTY_IF_CHANGED(m_partyDifficulty,   "partyDifficulty",   static_cast<int>(data.partyDifficulty));
+    DIRTY_IF_CHANGED(m_numRaidMembers,    "numRaidMembers",    static_cast<int>(data.numRaidMembers));
+    DIRTY_IF_CHANGED(m_raidDifficulty,    "raidDifficulty",    static_cast<int>(data.raidDifficulty));
+    DIRTY_IF_CHANGED(m_activeQuestsCount, "activeQuestsCount", static_cast<int>(data.activeQuestsCount));
+
     DIRTY_IF_CHANGED(m_targetHealth,    "targetHealth",    static_cast<int>(data.targetHealth));
     DIRTY_IF_CHANGED(m_targetMaxHealth, "targetMaxHealth", static_cast<int>(data.targetMaxHealth));
     DIRTY_IF_CHANGED(m_targetPower,     "targetPower",     static_cast<int>(data.targetPower));
@@ -169,6 +196,61 @@ void WowDataModel::Update(const WoWMemory::GameData& data)
             m_targetAuras.push_back(static_cast<int>(data.targetAuras[i].spellId));
         }
         m_handle.DirtyVariable("targetAuras");
+    }
+
+    // Update Party & Raid list bindings
+    auto updateGroupList = [](Rml::Vector<RmlGroupMember>& rmlList, const std::vector<WoWMemory::GroupMemberData>& rawList) -> bool {
+        bool changed = false;
+        if (rmlList.size() != rawList.size()) {
+            changed = true;
+        } else {
+            for (size_t i = 0; i < rawList.size(); ++i) {
+                const auto& raw = rawList[i];
+                const auto& rml = rmlList[i];
+                char rawGuidBuf[32];
+                snprintf(rawGuidBuf, sizeof(rawGuidBuf), "0x%llX", (unsigned long long)raw.guid);
+                if (rml.guid != rawGuidBuf ||
+                    rml.name != raw.name ||
+                    rml.health != static_cast<int>(raw.health) ||
+                    rml.maxHealth != static_cast<int>(raw.maxHealth) ||
+                    rml.auras.size() != raw.auraCount) {
+                    changed = true;
+                    break;
+                }
+                for (uint32_t j = 0; j < raw.auraCount; ++j) {
+                    if (rml.auras[j] != static_cast<int>(raw.auras[j].spellId)) {
+                        changed = true;
+                        break;
+                    }
+                }
+                if (changed) break;
+            }
+        }
+
+        if (changed) {
+            rmlList.clear();
+            for (const auto& raw : rawList) {
+                RmlGroupMember rml;
+                char guidBuf[32];
+                snprintf(guidBuf, sizeof(guidBuf), "0x%llX", (unsigned long long)raw.guid);
+                rml.guid = guidBuf;
+                rml.name = raw.name;
+                rml.health = static_cast<int>(raw.health);
+                rml.maxHealth = static_cast<int>(raw.maxHealth);
+                for (uint32_t j = 0; j < raw.auraCount; ++j) {
+                    rml.auras.push_back(static_cast<int>(raw.auras[j].spellId));
+                }
+                rmlList.push_back(rml);
+            }
+        }
+        return changed;
+    };
+
+    if (updateGroupList(m_partyMembers, data.partyMembersList)) {
+        m_handle.DirtyVariable("partyMembers");
+    }
+    if (updateGroupList(m_raidMembers, data.raidMembersList)) {
+        m_handle.DirtyVariable("raidMembers");
     }
 
     // Update Combat Log History

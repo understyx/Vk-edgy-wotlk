@@ -14,6 +14,9 @@
 #include "wowmemory/auras.h"
 #include "wowmemory/unit_info.h"
 #include "wowmemory/combat_log.h"
+#include "wowmemory/client/wow_party.h"
+#include "wowmemory/client/wow_raid.h"
+#include "wowmemory/client/wow_quest.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -43,6 +46,28 @@ std::string GameDataReader::ReadIndirectString(uint32_t ptrAddr, size_t maxLen)
 {
     return WoWMemory::ReadIndirectString(ptrAddr, maxLen);
 }
+
+#ifdef _WIN32
+static GroupMemberData PopulateGroupMemberStats(uint64_t guid) {
+    GroupMemberData member;
+    member.guid = guid;
+    uintptr_t baseAddress = GetObjectBaseByGUID(guid);
+    if (baseAddress) {
+        member.name = GetUnitName(guid, baseAddress);
+        uintptr_t fieldsPtr = *reinterpret_cast<const uintptr_t*>(baseAddress + WoWOffsets::objectDescriptorOffset);
+        if (fieldsPtr) {
+            if (IsReadableRange(fieldsPtr + WoWOffsets::unitFieldHealth, sizeof(uint32_t))) {
+                member.health = *reinterpret_cast<const uint32_t*>(fieldsPtr + WoWOffsets::unitFieldHealth);
+            }
+            if (IsReadableRange(fieldsPtr + WoWOffsets::unitFieldMaxHealth, sizeof(uint32_t))) {
+                member.maxHealth = *reinterpret_cast<const uint32_t*>(fieldsPtr + WoWOffsets::unitFieldMaxHealth);
+            }
+        }
+        member.auraCount = ReadAurasForUnit(baseAddress, member.auras, GroupMemberData::kMaxAuras);
+    }
+    return member;
+}
+#endif
 
 // ---------------------------------------------------------------------------
 #ifndef _WIN32
@@ -294,6 +319,31 @@ bool GameDataReader::ReadGameData(GameData& out)
     // ---- Combat log (incremental read of new events since last call) ----
     ReadCombatLogEvents(m_lastCombatLogNodeAddr, out);
 
+    // ---- Party, Raid & Quest metrics via Client API ----
+    out.numPartyMembers   = WoWParty::NumPartyMembers();
+    out.partyDifficulty   = WoWParty::Difficulty();
+    out.numRaidMembers    = WoWRaid::NumRaidMembers();
+    out.raidDifficulty    = WoWRaid::Difficulty();
+    out.activeQuestsCount = static_cast<uint32_t>(WoWQuest::GetActiveQuests().size());
+
+    // Populate party member list
+    out.partyMembersList.clear();
+    std::vector<uint64_t> partyGuids = WoWParty::GetMembersGuids();
+    for (uint64_t guid : partyGuids) {
+        if (guid != 0) {
+            out.partyMembersList.push_back(PopulateGroupMemberStats(guid));
+        }
+    }
+
+    // Populate raid member list
+    out.raidMembersList.clear();
+    std::vector<uint64_t> raidGuids = WoWRaid::GetMembersGuids();
+    for (uint64_t guid : raidGuids) {
+        if (guid != 0) {
+            out.raidMembersList.push_back(PopulateGroupMemberStats(guid));
+        }
+    }
+
     return true;
 }
 #endif
@@ -338,6 +388,30 @@ static T ReadVal(const uint8_t*& p, const uint8_t* end)
     T val = *reinterpret_cast<const T*>(p);
     p += sizeof(T);
     return val;
+}
+
+static void WriteGroupMember(std::vector<uint8_t>& buf, const GroupMemberData& m) {
+    WriteVal(buf, m.guid);
+    WriteString(buf, m.name);
+    WriteVal(buf, m.health);
+    WriteVal(buf, m.maxHealth);
+    WriteVal(buf, m.auraCount);
+    for (uint32_t i = 0; i < m.auraCount && i < GroupMemberData::kMaxAuras; ++i) {
+        WriteVal(buf, m.auras[i].spellId);
+    }
+}
+
+static bool ReadGroupMember(const uint8_t*& p, const uint8_t* end, GroupMemberData& m) {
+    m.guid = ReadVal<uint64_t>(p, end);
+    m.name = ReadString(p, end);
+    m.health = ReadVal<uint32_t>(p, end);
+    m.maxHealth = ReadVal<uint32_t>(p, end);
+    m.auraCount = ReadVal<uint32_t>(p, end);
+    if (m.auraCount > GroupMemberData::kMaxAuras) return false;
+    for (uint32_t i = 0; i < m.auraCount; ++i) {
+        m.auras[i].spellId = ReadVal<uint32_t>(p, end);
+    }
+    return p <= end;
 }
 
 void SerializeGameData(const GameData& data, std::vector<uint8_t>& outBuf)
@@ -416,6 +490,26 @@ void SerializeGameData(const GameData& data, std::vector<uint8_t>& outBuf)
     // 5. Camera
     WriteVal(outBuf, data.cameraYaw);
     WriteVal(outBuf, data.cameraPitch);
+
+    // 6. Party / Raid / Quest metrics
+    WriteVal(outBuf, data.numPartyMembers);
+    WriteVal(outBuf, data.partyDifficulty);
+    WriteVal(outBuf, data.numRaidMembers);
+    WriteVal(outBuf, data.raidDifficulty);
+    WriteVal(outBuf, data.activeQuestsCount);
+
+    // 7. Active Group Members
+    uint32_t numParty = static_cast<uint32_t>(data.partyMembersList.size());
+    WriteVal(outBuf, numParty);
+    for (uint32_t i = 0; i < numParty; ++i) {
+        WriteGroupMember(outBuf, data.partyMembersList[i]);
+    }
+
+    uint32_t numRaid = static_cast<uint32_t>(data.raidMembersList.size());
+    WriteVal(outBuf, numRaid);
+    for (uint32_t i = 0; i < numRaid; ++i) {
+        WriteGroupMember(outBuf, data.raidMembersList[i]);
+    }
 }
 
 bool DeserializeGameData(const std::vector<uint8_t>& buf, GameData& outData)
@@ -497,6 +591,26 @@ bool DeserializeGameData(const std::vector<uint8_t>& buf, GameData& outData)
     // 5. Camera
     outData.cameraYaw = ReadVal<float>(p, end);
     outData.cameraPitch = ReadVal<float>(p, end);
+
+    // 6. Party / Raid / Quest metrics
+    outData.numPartyMembers = ReadVal<uint32_t>(p, end);
+    outData.partyDifficulty = ReadVal<uint32_t>(p, end);
+    outData.numRaidMembers = ReadVal<uint32_t>(p, end);
+    outData.raidDifficulty = ReadVal<uint32_t>(p, end);
+    outData.activeQuestsCount = ReadVal<uint32_t>(p, end);
+
+    // 7. Active Group Members
+    uint32_t numParty = ReadVal<uint32_t>(p, end);
+    outData.partyMembersList.resize(numParty);
+    for (uint32_t i = 0; i < numParty; ++i) {
+        if (!ReadGroupMember(p, end, outData.partyMembersList[i])) return false;
+    }
+
+    uint32_t numRaid = ReadVal<uint32_t>(p, end);
+    outData.raidMembersList.resize(numRaid);
+    for (uint32_t i = 0; i < numRaid; ++i) {
+        if (!ReadGroupMember(p, end, outData.raidMembersList[i])) return false;
+    }
 
     return p <= end;
 }

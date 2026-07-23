@@ -35,6 +35,20 @@ struct AuraInfo {
 };
 
 /**
+ * @struct GroupMemberData
+ * @brief Passive information for a party or raid member.
+ */
+struct GroupMemberData {
+    uint64_t guid = 0;
+    std::string name;
+    uint32_t health = 0;
+    uint32_t maxHealth = 0;
+    static constexpr size_t kMaxAuras = 40;
+    AuraInfo auras[kMaxAuras];
+    uint32_t auraCount = 0;
+};
+
+/**
  * @struct CombatLogEvent
  * @brief A single combat log entry read from the WoW in-process linked list.
  *
@@ -140,6 +154,17 @@ struct GameData {
     // --- Camera ---
     float       cameraYaw   = 0.0f;  ///< Camera yaw in radians
     float       cameraPitch = 0.0f;  ///< Camera pitch in radians
+
+    // --- Party / Raid / Quest metrics ---
+    uint32_t    numPartyMembers = 0;
+    uint32_t    partyDifficulty = 0;
+    uint32_t    numRaidMembers  = 0;
+    uint32_t    raidDifficulty  = 0;
+    uint32_t    activeQuestsCount = 0;
+
+    // --- Active Group Members ---
+    std::vector<GroupMemberData> partyMembersList;
+    std::vector<GroupMemberData> raidMembersList;
 };
 
 /**

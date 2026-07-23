@@ -32,6 +32,9 @@
             border-color: #991b1b;
             background-color: #4c0519;
         }
+        .raid-member-out-of-range {
+            opacity: 0.5;
+        }
         .raid-hp {
             position: absolute;
             bottom: 0;
@@ -65,15 +68,15 @@
 <body data-model="wow">
     <!-- Show raid frames only when logged in and in a raid -->
     <div class="raid-container" data-show="playerIsIngame && numRaidMembers > 0">
-        <div class="raid-member" data-for="member : raidMembers" data-class-raid-member-dead="member.health == 0">
+        <div class="raid-member" data-for="member : raidMembers" data-class-raid-member-dead="member.inRange && member.health == 0" data-class-raid-member-out-of-range="!member.inRange">
             <!-- Health Fill -->
-            <div class="raid-hp" data-hide="member.health == 0" style="height: {{ member.maxHealth > 0 ? (member.health * 100 / member.maxHealth) : 0 }}%;"></div>
+            <div class="raid-hp" data-show="member.inRange" style="height: {{ member.maxHealth > 0 ? (member.health * 100 / member.maxHealth) : 0 }}%;"></div>
 
             <!-- Member Name -->
             <div class="raid-name">{{member.name}}</div>
 
             <!-- Dead Status Text -->
-            <div class="raid-status-text" data-show="member.health == 0">DEAD</div>
+            <div class="raid-status-text" data-show="member.inRange && member.health == 0">DEAD</div>
         </div>
     </div>
 </body>

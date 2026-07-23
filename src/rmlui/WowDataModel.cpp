@@ -75,6 +75,11 @@ bool WowDataModel::Initialise(Rml::Context* context)
         member_handle.RegisterMember("health", &RmlGroupMember::health);
         member_handle.RegisterMember("maxHealth", &RmlGroupMember::maxHealth);
         member_handle.RegisterMember("auras", &RmlGroupMember::auras);
+        member_handle.RegisterMember("inRange", &RmlGroupMember::inRange);
+        member_handle.RegisterMember("onlineState", &RmlGroupMember::onlineState);
+        member_handle.RegisterMember("subgroup", &RmlGroupMember::subgroup);
+        member_handle.RegisterMember("classId", &RmlGroupMember::classId);
+        member_handle.RegisterMember("roleFlags", &RmlGroupMember::roleFlags);
     }
     c.RegisterArray<Rml::Vector<RmlGroupMember>>();
 
@@ -213,6 +218,11 @@ void WowDataModel::Update(const WoWMemory::GameData& data)
                     rml.name != raw.name ||
                     rml.health != static_cast<int>(raw.health) ||
                     rml.maxHealth != static_cast<int>(raw.maxHealth) ||
+                    rml.inRange != (raw.inRange ? 1 : 0) ||
+                    rml.onlineState != static_cast<int>(raw.onlineState) ||
+                    rml.subgroup != static_cast<int>(raw.subgroup) ||
+                    rml.classId != static_cast<int>(raw.classId) ||
+                    rml.roleFlags != static_cast<int>(raw.roleFlags) ||
                     rml.auras.size() != raw.auraCount) {
                     changed = true;
                     break;
@@ -237,6 +247,11 @@ void WowDataModel::Update(const WoWMemory::GameData& data)
                 rml.name = raw.name;
                 rml.health = static_cast<int>(raw.health);
                 rml.maxHealth = static_cast<int>(raw.maxHealth);
+                rml.inRange = raw.inRange ? 1 : 0;
+                rml.onlineState = static_cast<int>(raw.onlineState);
+                rml.subgroup = static_cast<int>(raw.subgroup);
+                rml.classId = static_cast<int>(raw.classId);
+                rml.roleFlags = static_cast<int>(raw.roleFlags);
                 for (uint32_t j = 0; j < raw.auraCount; ++j) {
                     rml.auras.push_back(static_cast<int>(raw.auras[j].spellId));
                 }

@@ -29,6 +29,9 @@
             border-color: #991b1b;
             background-color: rgba(40, 10, 10, 0.85);
         }
+        .party-member-out-of-range {
+            opacity: 0.5;
+        }
         .party-header {
             display: flex;
             justify-content: space-between;
@@ -93,19 +96,19 @@
 <body data-model="wow">
     <!-- Show party frames only when logged in, in a party, and not in a raid -->
     <div class="party-container" data-show="playerIsIngame && numPartyMembers > 0 && numRaidMembers == 0">
-        <div class="party-member" data-for="member : partyMembers" data-class-party-member-dead="member.health == 0">
+        <div class="party-member" data-for="member : partyMembers" data-class-party-member-dead="member.inRange && member.health == 0" data-class-party-member-out-of-range="!member.inRange">
             <div class="party-header">
                 <span class="party-name">{{member.name}}</span>
-                <span class="party-dead-text" data-show="member.health == 0">DEAD</span>
+                <span class="party-dead-text" data-show="member.inRange && member.health == 0">DEAD</span>
             </div>
 
-            <div class="party-bar" data-hide="member.health == 0">
+            <div class="party-bar" data-show="member.inRange">
                 <div class="party-hp-fill" style="width: {{ member.maxHealth > 0 ? (member.health * 100 / member.maxHealth) : 0 }}%;"></div>
                 <div class="party-hp-text">{{member.health}} / {{member.maxHealth}}</div>
             </div>
 
             <!-- Member Auras -->
-            <div class="party-auras" data-show="member.auras.size > 0">
+            <div class="party-auras" data-show="member.inRange && member.auras.size > 0">
                 <span class="party-aura" data-for="spellId : member.auras">
                     {{spellId}}
                 </span>

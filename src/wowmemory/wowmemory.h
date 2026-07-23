@@ -46,6 +46,13 @@ struct GroupMemberData {
     static constexpr size_t kMaxAuras = 40;
     AuraInfo auras[kMaxAuras];
     uint32_t auraCount = 0;
+
+    // Out of range fields
+    bool inRange = false;
+    uint32_t onlineState = 0;
+    uint32_t subgroup = 0;
+    uint32_t classId = 0;
+    uint32_t roleFlags = 0;
 };
 
 /**

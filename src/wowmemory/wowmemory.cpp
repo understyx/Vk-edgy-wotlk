@@ -48,6 +48,22 @@ std::string GameDataReader::ReadIndirectString(uint32_t ptrAddr, size_t maxLen)
 }
 
 #ifdef _WIN32
+struct PartyMemberStruct {
+    uint64_t guid;        // 0x00 - 64-bit GUID
+    uint32_t unknown0;    // 0x08
+    uint32_t onlineState; // 0x0C - Flag for online/offline/ghost
+    uint32_t padding[4];  // padding to 32 bytes (stride of PartyMember in 3.3.5a)
+};
+
+struct RaidMemberStruct {
+    char name[48];        // Null-terminated string
+    uint64_t guid;        // 64-bit GUID
+    uint32_t subgroup;    // Group 1-8
+    uint32_t classId;     // Class enum
+    uint32_t roleFlags;   // Main Tank / Main Assist / Role flags
+    uint32_t onlineState; // Online/Offline status
+};
+
 static GroupMemberData PopulateGroupMemberStats(uint64_t guid) {
     GroupMemberData member;
     member.guid = guid;
@@ -64,6 +80,86 @@ static GroupMemberData PopulateGroupMemberStats(uint64_t guid) {
             }
         }
         member.auraCount = ReadAurasForUnit(baseAddress, member.auras, GroupMemberData::kMaxAuras);
+    }
+    return member;
+}
+
+static GroupMemberData PopulatePartyMemberData(int index, uint32_t baseAddr) {
+    GroupMemberData member;
+    uint32_t structAddr = baseAddr + index * 32;
+    if (IsReadableRange(structAddr, 16)) {
+        member.guid = *reinterpret_cast<const uint64_t*>(structAddr);
+        member.onlineState = *reinterpret_cast<const uint32_t*>(structAddr + 12);
+    }
+
+    if (member.guid != 0) {
+        uintptr_t baseAddress = GetObjectBaseByGUID(member.guid);
+        if (baseAddress) {
+            member.inRange = true;
+            member.name = GetUnitName(member.guid, baseAddress);
+            uintptr_t fieldsPtr = *reinterpret_cast<const uintptr_t*>(baseAddress + WoWOffsets::objectDescriptorOffset);
+            if (fieldsPtr) {
+                if (IsReadableRange(fieldsPtr + WoWOffsets::unitFieldHealth, sizeof(uint32_t))) {
+                    member.health = *reinterpret_cast<const uint32_t*>(fieldsPtr + WoWOffsets::unitFieldHealth);
+                }
+                if (IsReadableRange(fieldsPtr + WoWOffsets::unitFieldMaxHealth, sizeof(uint32_t))) {
+                    member.maxHealth = *reinterpret_cast<const uint32_t*>(fieldsPtr + WoWOffsets::unitFieldMaxHealth);
+                }
+            }
+            member.auraCount = ReadAurasForUnit(baseAddress, member.auras, GroupMemberData::kMaxAuras);
+        } else {
+            member.inRange = false;
+            member.name = GetUnitName(member.guid, 0);
+            member.health = 0;
+            member.maxHealth = 0;
+            member.auraCount = 0;
+        }
+    }
+    return member;
+}
+
+static GroupMemberData PopulateRaidMemberData(int index) {
+    GroupMemberData member;
+    uint32_t ptr = ReadAbs<uint32_t>(WoWOffsets::Raid::RaidArray + index * sizeof(uint32_t));
+    if (ptr && IsReadableRange(ptr, 72)) {
+        member.guid = *reinterpret_cast<const uint64_t*>(ptr + 48);
+        member.subgroup = *reinterpret_cast<const uint32_t*>(ptr + 56);
+        member.classId = *reinterpret_cast<const uint32_t*>(ptr + 60);
+        member.roleFlags = *reinterpret_cast<const uint32_t*>(ptr + 64);
+        member.onlineState = *reinterpret_cast<const uint32_t*>(ptr + 68);
+
+        char nameBuf[49];
+        memcpy(nameBuf, reinterpret_cast<const char*>(ptr), 48);
+        nameBuf[48] = '\0';
+        member.name = nameBuf;
+    }
+
+    if (member.guid != 0) {
+        uintptr_t baseAddress = GetObjectBaseByGUID(member.guid);
+        if (baseAddress) {
+            member.inRange = true;
+            if (member.name.empty()) {
+                member.name = GetUnitName(member.guid, baseAddress);
+            }
+            uintptr_t fieldsPtr = *reinterpret_cast<const uintptr_t*>(baseAddress + WoWOffsets::objectDescriptorOffset);
+            if (fieldsPtr) {
+                if (IsReadableRange(fieldsPtr + WoWOffsets::unitFieldHealth, sizeof(uint32_t))) {
+                    member.health = *reinterpret_cast<const uint32_t*>(fieldsPtr + WoWOffsets::unitFieldHealth);
+                }
+                if (IsReadableRange(fieldsPtr + WoWOffsets::unitFieldMaxHealth, sizeof(uint32_t))) {
+                    member.maxHealth = *reinterpret_cast<const uint32_t*>(fieldsPtr + WoWOffsets::unitFieldMaxHealth);
+                }
+            }
+            member.auraCount = ReadAurasForUnit(baseAddress, member.auras, GroupMemberData::kMaxAuras);
+        } else {
+            member.inRange = false;
+            if (member.name.empty()) {
+                member.name = GetUnitName(member.guid, 0);
+            }
+            member.health = 0;
+            member.maxHealth = 0;
+            member.auraCount = 0;
+        }
     }
     return member;
 }
@@ -328,19 +424,23 @@ bool GameDataReader::ReadGameData(GameData& out)
 
     // Populate party member list
     out.partyMembersList.clear();
-    std::vector<uint64_t> partyGuids = WoWParty::GetMembersGuids();
-    for (uint64_t guid : partyGuids) {
-        if (guid != 0) {
-            out.partyMembersList.push_back(PopulateGroupMemberStats(guid));
+    uint32_t baseAddr = ReadAbs<uint32_t>(WoWOffsets::Party::PartyArray);
+    if (baseAddr && IsReadableRange(baseAddr, 32)) {
+        for (int i = 0; i < 4; ++i) {
+            GroupMemberData member = PopulatePartyMemberData(i, baseAddr);
+            if (member.guid != 0) {
+                out.partyMembersList.push_back(member);
+            }
         }
     }
 
     // Populate raid member list
     out.raidMembersList.clear();
-    std::vector<uint64_t> raidGuids = WoWRaid::GetMembersGuids();
-    for (uint64_t guid : raidGuids) {
-        if (guid != 0) {
-            out.raidMembersList.push_back(PopulateGroupMemberStats(guid));
+    int numRaid = WoWRaid::NumRaidMembers();
+    for (int i = 0; i < numRaid && i < 40; ++i) {
+        GroupMemberData member = PopulateRaidMemberData(i);
+        if (member.guid != 0) {
+            out.raidMembersList.push_back(member);
         }
     }
 
@@ -399,6 +499,11 @@ static void WriteGroupMember(std::vector<uint8_t>& buf, const GroupMemberData& m
     for (uint32_t i = 0; i < m.auraCount && i < GroupMemberData::kMaxAuras; ++i) {
         WriteVal(buf, m.auras[i].spellId);
     }
+    WriteVal(buf, m.inRange);
+    WriteVal(buf, m.onlineState);
+    WriteVal(buf, m.subgroup);
+    WriteVal(buf, m.classId);
+    WriteVal(buf, m.roleFlags);
 }
 
 static bool ReadGroupMember(const uint8_t*& p, const uint8_t* end, GroupMemberData& m) {
@@ -411,6 +516,11 @@ static bool ReadGroupMember(const uint8_t*& p, const uint8_t* end, GroupMemberDa
     for (uint32_t i = 0; i < m.auraCount; ++i) {
         m.auras[i].spellId = ReadVal<uint32_t>(p, end);
     }
+    m.inRange = ReadVal<bool>(p, end);
+    m.onlineState = ReadVal<uint32_t>(p, end);
+    m.subgroup = ReadVal<uint32_t>(p, end);
+    m.classId = ReadVal<uint32_t>(p, end);
+    m.roleFlags = ReadVal<uint32_t>(p, end);
     return p <= end;
 }
 

@@ -77,6 +77,11 @@ int main() {
     m1.maxHealth = 10000;
     m1.auraCount = 1;
     m1.auras[0].spellId = 999;
+    m1.inRange = true;
+    m1.onlineState = 1;
+    m1.subgroup = 2;
+    m1.classId = 3;
+    m1.roleFlags = 4;
     testData.partyMembersList.push_back(m1);
 
     WoWMemory::GroupMemberData r1;
@@ -87,6 +92,11 @@ int main() {
     r1.auraCount = 2;
     r1.auras[0].spellId = 888;
     r1.auras[1].spellId = 777;
+    r1.inRange = false;
+    r1.onlineState = 0;
+    r1.subgroup = 5;
+    r1.classId = 6;
+    r1.roleFlags = 7;
     testData.raidMembersList.push_back(r1);
 
     testData.combatLogEvents[0].timestamp = 99999;
@@ -127,6 +137,11 @@ int main() {
     assert(deserializedData.partyMembersList[0].maxHealth == 10000);
     assert(deserializedData.partyMembersList[0].auraCount == 1);
     assert(deserializedData.partyMembersList[0].auras[0].spellId == 999);
+    assert(deserializedData.partyMembersList[0].inRange == true);
+    assert(deserializedData.partyMembersList[0].onlineState == 1);
+    assert(deserializedData.partyMembersList[0].subgroup == 2);
+    assert(deserializedData.partyMembersList[0].classId == 3);
+    assert(deserializedData.partyMembersList[0].roleFlags == 4);
 
     assert(deserializedData.raidMembersList.size() == 1);
     assert(deserializedData.raidMembersList[0].guid == 2222ULL);
@@ -136,6 +151,11 @@ int main() {
     assert(deserializedData.raidMembersList[0].auraCount == 2);
     assert(deserializedData.raidMembersList[0].auras[0].spellId == 888);
     assert(deserializedData.raidMembersList[0].auras[1].spellId == 777);
+    assert(deserializedData.raidMembersList[0].inRange == false);
+    assert(deserializedData.raidMembersList[0].onlineState == 0);
+    assert(deserializedData.raidMembersList[0].subgroup == 5);
+    assert(deserializedData.raidMembersList[0].classId == 6);
+    assert(deserializedData.raidMembersList[0].roleFlags == 7);
 
     assert(deserializedData.combatLogEvents[0].timestamp == 99999);
     assert(deserializedData.combatLogEvents[0].amount == 500);

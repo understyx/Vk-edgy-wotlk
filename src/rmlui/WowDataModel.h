@@ -11,6 +11,11 @@ struct RmlGroupMember {
     int health = 0;
     int maxHealth = 0;
     Rml::Vector<int> auras;
+    int inRange = 0;
+    int onlineState = 0;
+    int subgroup = 0;
+    int classId = 0;
+    int roleFlags = 0;
 };
 
 /**

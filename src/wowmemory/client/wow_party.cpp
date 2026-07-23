@@ -24,11 +24,15 @@ uint32_t WoWParty::Difficulty() {
 
 uint64_t WoWParty::GetPartyMemberGuid(int index) {
 #ifdef _WIN32
-    uint32_t addr = WoWOffsets::Party::PartyArray + index * sizeof(uint64_t);
-    return ReadAbs<uint64_t>(addr);
-#else
-    return 0;
+    uint32_t baseAddr = ReadAbs<uint32_t>(WoWOffsets::Party::PartyArray);
+    if (baseAddr) {
+        uint32_t addr = baseAddr + index * 32;
+        if (IsReadableRange(addr, sizeof(uint64_t))) {
+            return ReadAbs<uint64_t>(addr);
+        }
+    }
 #endif
+    return 0;
 }
 
 std::vector<uint64_t> WoWParty::GetMembersGuids() {

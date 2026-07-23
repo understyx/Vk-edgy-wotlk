@@ -23,8 +23,8 @@ uint32_t WoWRaid::Difficulty() {
 uint64_t WoWRaid::GetRaidMemberGuid(int index) {
 #ifdef _WIN32
     uint32_t ptr = ReadAbs<uint32_t>(WoWOffsets::Raid::RaidArray + index * sizeof(uint32_t));
-    if (ptr) {
-        return ReadAbs<uint64_t>(ptr);
+    if (ptr && IsReadableRange(ptr + 0x30, sizeof(uint64_t))) {
+        return ReadAbs<uint64_t>(ptr + 0x30);
     }
 #endif
     return 0;

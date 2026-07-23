@@ -14,6 +14,9 @@
 #include "wowmemory/auras.h"
 #include "wowmemory/unit_info.h"
 #include "wowmemory/combat_log.h"
+#include "wowmemory/client/wow_party.h"
+#include "wowmemory/client/wow_raid.h"
+#include "wowmemory/client/wow_quest.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -294,6 +297,13 @@ bool GameDataReader::ReadGameData(GameData& out)
     // ---- Combat log (incremental read of new events since last call) ----
     ReadCombatLogEvents(m_lastCombatLogNodeAddr, out);
 
+    // ---- Party, Raid & Quest metrics via Client API ----
+    out.numPartyMembers   = WoWParty::NumPartyMembers();
+    out.partyDifficulty   = WoWParty::Difficulty();
+    out.numRaidMembers    = WoWRaid::NumRaidMembers();
+    out.raidDifficulty    = WoWRaid::Difficulty();
+    out.activeQuestsCount = static_cast<uint32_t>(WoWQuest::GetActiveQuests().size());
+
     return true;
 }
 #endif
@@ -416,6 +426,13 @@ void SerializeGameData(const GameData& data, std::vector<uint8_t>& outBuf)
     // 5. Camera
     WriteVal(outBuf, data.cameraYaw);
     WriteVal(outBuf, data.cameraPitch);
+
+    // 6. Party / Raid / Quest metrics
+    WriteVal(outBuf, data.numPartyMembers);
+    WriteVal(outBuf, data.partyDifficulty);
+    WriteVal(outBuf, data.numRaidMembers);
+    WriteVal(outBuf, data.raidDifficulty);
+    WriteVal(outBuf, data.activeQuestsCount);
 }
 
 bool DeserializeGameData(const std::vector<uint8_t>& buf, GameData& outData)
@@ -497,6 +514,13 @@ bool DeserializeGameData(const std::vector<uint8_t>& buf, GameData& outData)
     // 5. Camera
     outData.cameraYaw = ReadVal<float>(p, end);
     outData.cameraPitch = ReadVal<float>(p, end);
+
+    // 6. Party / Raid / Quest metrics
+    outData.numPartyMembers = ReadVal<uint32_t>(p, end);
+    outData.partyDifficulty = ReadVal<uint32_t>(p, end);
+    outData.numRaidMembers = ReadVal<uint32_t>(p, end);
+    outData.raidDifficulty = ReadVal<uint32_t>(p, end);
+    outData.activeQuestsCount = ReadVal<uint32_t>(p, end);
 
     return p <= end;
 }

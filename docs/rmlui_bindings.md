@@ -57,7 +57,17 @@ These coordinates represent where the player's corpse is located (useful for cor
 | `corpseY` | `float` | `m_corpseY` | Y-coordinate of the player's corpse. |
 | `corpseZ` | `float` | `m_corpseZ` | Z-coordinate (altitude) of the player's corpse. |
 
-### 5. Lists & Arrays (Complex Bindings)
+### 5. Party, Raid & Quest Metrics
+
+| Variable Name | RmlUi Type | C++ Mirror Variable | Description |
+| :--- | :--- | :--- | :--- |
+| `numPartyMembers` | `int` | `m_numPartyMembers` | The number of players currently in your party. |
+| `partyDifficulty` | `int` | `m_partyDifficulty` | The current dungeon difficulty of your party. |
+| `numRaidMembers` | `int` | `m_numRaidMembers` | The number of players currently in your raid. |
+| `raidDifficulty` | `int` | `m_raidDifficulty` | The current raid difficulty of your raid. |
+| `activeQuestsCount` | `int` | `m_activeQuestsCount` | The total number of active quests in your quest log. |
+
+### 6. Lists & Arrays (Complex Bindings)
 
 | Variable Name | RmlUi Type | C++ Mirror Variable | Description |
 | :--- | :--- | :--- | :--- |

@@ -32,6 +32,13 @@ bool WowDataModel::Initialise(Rml::Context* context)
     c.Bind("playerPowerType", &m_playerPowerType);
     c.Bind("playerIsIngame",  &m_playerIsIngame);
 
+    // Party / Raid / Quest metrics
+    c.Bind("numPartyMembers",   &m_numPartyMembers);
+    c.Bind("partyDifficulty",   &m_partyDifficulty);
+    c.Bind("numRaidMembers",    &m_numRaidMembers);
+    c.Bind("raidDifficulty",    &m_raidDifficulty);
+    c.Bind("activeQuestsCount", &m_activeQuestsCount);
+
     // Target state
     c.Bind("targetHealth",    &m_targetHealth);
     c.Bind("targetMaxHealth", &m_targetMaxHealth);
@@ -117,6 +124,13 @@ void WowDataModel::Update(const WoWMemory::GameData& data)
     DIRTY_IF_CHANGED(m_playerPower,     "playerPower",     static_cast<int>(data.playerPower));
     DIRTY_IF_CHANGED(m_playerMaxPower,  "playerMaxPower",  static_cast<int>(data.playerMaxPower));
     DIRTY_IF_CHANGED(m_playerPowerType, "playerPowerType", static_cast<int>(data.playerPowerType));
+
+    // Party / Raid / Quest metrics
+    DIRTY_IF_CHANGED(m_numPartyMembers,   "numPartyMembers",   static_cast<int>(data.numPartyMembers));
+    DIRTY_IF_CHANGED(m_partyDifficulty,   "partyDifficulty",   static_cast<int>(data.partyDifficulty));
+    DIRTY_IF_CHANGED(m_numRaidMembers,    "numRaidMembers",    static_cast<int>(data.numRaidMembers));
+    DIRTY_IF_CHANGED(m_raidDifficulty,    "raidDifficulty",    static_cast<int>(data.raidDifficulty));
+    DIRTY_IF_CHANGED(m_activeQuestsCount, "activeQuestsCount", static_cast<int>(data.activeQuestsCount));
 
     DIRTY_IF_CHANGED(m_targetHealth,    "targetHealth",    static_cast<int>(data.targetHealth));
     DIRTY_IF_CHANGED(m_targetMaxHealth, "targetMaxHealth", static_cast<int>(data.targetMaxHealth));

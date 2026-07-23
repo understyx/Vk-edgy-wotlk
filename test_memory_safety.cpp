@@ -38,6 +38,11 @@ int main() {
     assert(data.corpseZ == 0.0f);
     assert(data.auraCount == 0);
     assert(data.combatLogEventCount == 0);
+    assert(data.numPartyMembers == 0);
+    assert(data.partyDifficulty == 0);
+    assert(data.numRaidMembers == 0);
+    assert(data.raidDifficulty == 0);
+    assert(data.activeQuestsCount == 0);
 
     // Serialization & Deserialization Test
     std::cout << "Testing serialization and deserialization...\n";
@@ -56,6 +61,11 @@ int main() {
     testData.auras[0].spellId = 123;
     testData.auras[1].spellId = 456;
     testData.combatLogEventCount = 1;
+    testData.numPartyMembers = 3;
+    testData.partyDifficulty = 2;
+    testData.numRaidMembers = 25;
+    testData.raidDifficulty = 3;
+    testData.activeQuestsCount = 10;
     testData.combatLogEvents[0].timestamp = 99999;
     testData.combatLogEvents[0].amount = 500;
 
@@ -81,6 +91,11 @@ int main() {
     assert(deserializedData.auras[0].spellId == 123);
     assert(deserializedData.auras[1].spellId == 456);
     assert(deserializedData.combatLogEventCount == 1);
+    assert(deserializedData.numPartyMembers == 3);
+    assert(deserializedData.partyDifficulty == 2);
+    assert(deserializedData.numRaidMembers == 25);
+    assert(deserializedData.raidDifficulty == 3);
+    assert(deserializedData.activeQuestsCount == 10);
     assert(deserializedData.combatLogEvents[0].timestamp == 99999);
     assert(deserializedData.combatLogEvents[0].amount == 500);
 

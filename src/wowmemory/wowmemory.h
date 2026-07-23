@@ -140,6 +140,13 @@ struct GameData {
     // --- Camera ---
     float       cameraYaw   = 0.0f;  ///< Camera yaw in radians
     float       cameraPitch = 0.0f;  ///< Camera pitch in radians
+
+    // --- Party / Raid / Quest metrics ---
+    uint32_t    numPartyMembers = 0;
+    uint32_t    partyDifficulty = 0;
+    uint32_t    numRaidMembers  = 0;
+    uint32_t    raidDifficulty  = 0;
+    uint32_t    activeQuestsCount = 0;
 };
 
 /**

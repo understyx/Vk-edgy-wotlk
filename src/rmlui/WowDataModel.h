@@ -63,6 +63,13 @@ private:
     int         m_playerMaxPower  = 0;
     int         m_playerPowerType = 0;
 
+    // Party / Raid / Quest metrics
+    int         m_numPartyMembers = 0;
+    int         m_partyDifficulty = 0;
+    int         m_numRaidMembers  = 0;
+    int         m_raidDifficulty  = 0;
+    int         m_activeQuestsCount = 0;
+
     int         m_targetHealth    = 0;
     int         m_targetMaxHealth = 0;
     int         m_targetPower     = 0;

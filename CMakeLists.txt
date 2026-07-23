@@ -107,6 +107,15 @@ set(VKLAYER_SOURCES
     src/wowmemory/unit_info.cpp
     src/wowmemory/combat_log.cpp
     src/wowmemory/wowmemory.cpp
+    src/wowmemory/object_manager.cpp
+    src/wowmemory/objects/wow_object.cpp
+    src/wowmemory/objects/wow_unit.cpp
+    src/wowmemory/objects/wow_player.cpp
+    src/wowmemory/objects/wow_game_object.cpp
+    src/wowmemory/objects/wow_item.cpp
+    src/wowmemory/objects/wow_container.cpp
+    src/wowmemory/objects/wow_dynamic_object.cpp
+    src/wowmemory/objects/wow_corpse.cpp
 )
 
 add_library(vklayer_understyx_wotlk SHARED ${VKLAYER_SOURCES})
@@ -129,6 +138,8 @@ target_include_directories(vklayer_understyx_wotlk
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects
         $<$<BOOL:${LUA_FOUND}>:${LUA_INCLUDE_DIR}>
 )
 
@@ -183,12 +194,23 @@ add_custom_target(WowMemoryDLL
         -static-libstdc++
         -I${CMAKE_CURRENT_SOURCE_DIR}/include
         -I${CMAKE_CURRENT_SOURCE_DIR}/src
+        -I${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory
+        -I${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects
         ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory_dll/wowmemory_dll.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/memory_utils.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/auras.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/unit_info.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/combat_log.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/wowmemory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/object_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_object.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_unit.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_player.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_game_object.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_item.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_container.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_dynamic_object.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects/wow_corpse.cpp
         -lws2_32
         -o ${CMAKE_CURRENT_BINARY_DIR}/dist/wowmemory.dll
     # Compile injector.exe

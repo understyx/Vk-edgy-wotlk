@@ -7,97 +7,73 @@
         body {
             position: absolute;
             left: 20dp;
-            top: 480dp;
-            width: 140dp;
-            height: 180dp;
+            top: 150dp;
+            width: 250dp;
+            height: 400dp;
         }
         .raid-container {
             display: flex;
             flex-wrap: wrap;
-            width: 130dp;
+            width: 240dp;
             gap: 4dp;
         }
         .raid-member {
-            width: 38dp;
-            height: 30dp;
+            width: 55dp;
+            height: 40dp;
             background-color: rgba(15, 15, 18, 0.88);
             border-width: 1dp;
             border-style: solid;
             border-color: #333333;
             border-radius: 2dp;
             position: relative;
+            overflow: hidden;
+        }
+        .raid-member-dead {
+            border-color: #991b1b;
+            background-color: #4c0519;
         }
         .raid-hp {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            background-color: #228b22;
+            background-color: #228b22; /* Classic Green */
         }
         .raid-name {
             position: absolute;
             top: 4dp;
             width: 100%;
             text-align: center;
-            font-size: 8dp;
+            font-size: 9dp;
             font-weight: bold;
             color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .raid-dead {
-            background-color: #4c0519;
-            border-color: #991b1b;
-        }
-        .raid-dead .raid-name {
+        .raid-status-text {
+            position: absolute;
+            bottom: 4dp;
+            width: 100%;
+            text-align: center;
+            font-size: 8dp;
+            font-weight: bold;
             color: #ef4444;
         }
     </style>
 </head>
 <body data-model="wow">
-    <!-- Show raid frames only when logged in -->
-    <div data-show="playerIsIngame">
-        <div class="raid-container">
-            <!-- Group 1 -->
-            <div class="raid-member">
-                <div class="raid-hp" style="height: 100%;"></div>
-                <div class="raid-name">Tank</div>
-            </div>
-            <div class="raid-member">
-                <div class="raid-hp" style="height: 90%;"></div>
-                <div class="raid-name">Heal</div>
-            </div>
-            <div class="raid-member">
-                <div class="raid-hp" style="height: 65%;"></div>
-                <div class="raid-name">Mage</div>
-            </div>
-            <div class="raid-member">
-                <div class="raid-hp" style="height: 100%;"></div>
-                <div class="raid-name">Lock</div>
-            </div>
-            <div class="raid-member raid-dead">
-                <div class="raid-name">Dead</div>
-            </div>
+    <!-- Show raid frames only when logged in and in a raid -->
+    <div class="raid-container" data-show="playerIsIngame && numRaidMembers > 0">
+        <div class="raid-member" data-for="member : raidMembers" data-class-raid-member-dead="member.health == 0">
+            <!-- Health Fill -->
+            <div class="raid-hp" data-hide="member.health == 0" style="height: {{ member.maxHealth > 0 ? (member.health * 100 / member.maxHealth) : 0 }}%;"></div>
 
-            <!-- Group 2 -->
-            <div class="raid-member">
-                <div class="raid-hp" style="height: 80%;"></div>
-                <div class="raid-name">Rogue</div>
-            </div>
-            <div class="raid-member">
-                <div class="raid-hp" style="height: 100%;"></div>
-                <div class="raid-name">Druid</div>
-            </div>
-            <div class="raid-member">
-                <div class="raid-hp" style="height: 40%;"></div>
-                <div class="raid-name">Priest</div>
-            </div>
-            <div class="raid-member">
-                <div class="raid-hp" style="height: 95%;"></div>
-                <div class="raid-name">Shaman</div>
-            </div>
-            <div class="raid-member">
-                <div class="raid-hp" style="height: 100%;"></div>
-                <div class="raid-name">DK</div>
-            </div>
+            <!-- Member Name -->
+            <div class="raid-name">{{member.name}}</div>
+
+            <!-- Dead Status Text -->
+            <div class="raid-status-text" data-show="member.health == 0">DEAD</div>
         </div>
     </div>
 </body>

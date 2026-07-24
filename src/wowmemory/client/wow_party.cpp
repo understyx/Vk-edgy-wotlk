@@ -1,6 +1,7 @@
 #include "wow_party.h"
 #include "wowmemory/offsets.h"
 #include "wowmemory/memory_utils.h"
+#include <cstdio>
 
 namespace WoWMemory {
 
@@ -24,8 +25,20 @@ uint32_t WoWParty::Difficulty() {
 
 uint64_t WoWParty::GetPartyMemberGuid(int index) {
 #ifdef _WIN32
-    uint32_t addr = WoWOffsets::Party::PartyArray + index * sizeof(uint64_t);
-    return ReadAbs<uint64_t>(addr);
+    uint32_t addr = WoWOffsets::Party::PartyArray + index * 32; // PartyEntry is 32 bytes
+    uint64_t guid = ReadAbs<uint64_t>(addr);
+    if (guid != 0) {
+        uint8_t unknown[24];
+        for (int i = 0; i < 24; ++i) {
+            unknown[i] = ReadAbs<uint8_t>(addr + 8 + i);
+        }
+        fprintf(stderr, "[Party] Index %d, GUID %llu (0x%016llX) Unknown: ", index, (unsigned long long)guid, (unsigned long long)guid);
+        for (int i = 0; i < 24; ++i) {
+            fprintf(stderr, "%02X ", unknown[i]);
+        }
+        fprintf(stderr, "\n");
+    }
+    return guid;
 #else
     return 0;
 #endif

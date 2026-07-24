@@ -49,6 +49,7 @@ uint32_t WoWWorld::CurrentZoneId() {
 }
 
 bool WoWWorld::HandleTerrainClick(const Location& loc) {
+    (void)loc;
 #ifdef _WIN32
     typedef bool (__cdecl *HandleTerrainClick_t)(const TerrainClickEvent*);
     auto fn = reinterpret_cast<HandleTerrainClick_t>(WoWOffsets::World::HandleTerrainClick);
@@ -63,6 +64,8 @@ bool WoWWorld::HandleTerrainClick(const Location& loc) {
 }
 
 int WoWWorld::Traceline(const Location& start, const Location& end, Location& result, uint32_t flags) {
+    (void)start;
+    (void)flags;
 #ifdef _WIN32
     typedef int (__cdecl *Traceline_t)(const Location*, const Location*, Location*, float*, uint32_t, uint32_t);
     auto fn = reinterpret_cast<Traceline_t>(WoWOffsets::World::Traceline);

@@ -40,6 +40,9 @@ void WoWClientServices::SetMessageHandler(uint32_t msgId, PacketHandler_t handle
 }
 
 void WoWClientServices::SetMessageHandler(uint32_t msgId, void* handler, void* param) {
+    (void)msgId;
+    (void)handler;
+    (void)param;
 #ifdef _WIN32
     typedef void (__cdecl *SetMessageHandler_t)(uint32_t, void*, void*);
     auto fn = reinterpret_cast<SetMessageHandler_t>(WoWOffsets::ClientServices::SetMessageHandler);

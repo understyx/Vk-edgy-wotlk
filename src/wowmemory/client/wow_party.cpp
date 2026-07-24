@@ -23,6 +23,7 @@ uint32_t WoWParty::Difficulty() {
 }
 
 uint64_t WoWParty::GetPartyMemberGuid(int index) {
+    (void)index;
 #ifdef _WIN32
     uint32_t addr = WoWOffsets::Party::PartyArray + index * sizeof(uint64_t);
     return ReadAbs<uint64_t>(addr);

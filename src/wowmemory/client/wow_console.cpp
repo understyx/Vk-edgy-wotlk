@@ -24,6 +24,7 @@ WoWConsole::~WoWConsole() {
 }
 
 void WoWConsole::Toggle(bool enable) {
+    (void)enable;
 #ifdef _WIN32
     if (IsReadableRange(WoWOffsets::Console::Enable, sizeof(uint32_t))) {
         *reinterpret_cast<uint32_t*>(WoWOffsets::Console::Enable) = (enable ? 1 : 0);
@@ -32,10 +33,13 @@ void WoWConsole::Toggle(bool enable) {
 }
 
 void WoWConsole::SetConsoleKey(const std::string& key) {
+    (void)key;
     // Lua-free implementation of console key is ignored because we are not using WoW's Lua execution context.
 }
 
 void WoWConsole::Write(const std::string& text, WoWConsoleColor color) {
+    (void)text;
+    (void)color;
 #ifdef _WIN32
     typedef void (__cdecl *ConsoleWriteA_t)(const char*, WoWConsoleColor, const char*);
     auto fn = reinterpret_cast<ConsoleWriteA_t>(WoWOffsets::Console::WriteA);
@@ -44,6 +48,10 @@ void WoWConsole::Write(const std::string& text, WoWConsoleColor color) {
 }
 
 bool WoWConsole::RegisterCommand(const std::string& command, CommandHandler_t handler, CommandCategory category, const std::string& help) {
+    (void)command;
+    (void)handler;
+    (void)category;
+    (void)help;
 #ifdef _WIN32
     if (m_commandAllocations.find(command) != m_commandAllocations.end()) {
         return false;
@@ -64,6 +72,7 @@ bool WoWConsole::RegisterCommand(const std::string& command, CommandHandler_t ha
 }
 
 void WoWConsole::UnregisterCommand(const std::string& command) {
+    (void)command;
 #ifdef _WIN32
     auto it = m_commandAllocations.find(command);
     if (it == m_commandAllocations.end()) {

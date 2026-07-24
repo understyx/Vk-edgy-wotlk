@@ -60,6 +60,7 @@ void* CDataStore::GetData() const {
 }
 
 void CDataStore::SetData(void* data) {
+    (void)data;
 #ifdef _WIN32
     if (!m_pointer) return;
     *reinterpret_cast<void**>(static_cast<char*>(m_pointer) + 0x4) = data;
@@ -76,6 +77,7 @@ uint32_t CDataStore::GetBase() const {
 }
 
 void CDataStore::SetBase(uint32_t baseVal) {
+    (void)baseVal;
 #ifdef _WIN32
     if (!m_pointer) return;
     *reinterpret_cast<uint32_t*>(static_cast<char*>(m_pointer) + 0x8) = baseVal;
@@ -92,6 +94,7 @@ uint32_t CDataStore::GetCapacity() const {
 }
 
 void CDataStore::SetCapacity(uint32_t cap) {
+    (void)cap;
 #ifdef _WIN32
     if (!m_pointer) return;
     *reinterpret_cast<uint32_t*>(static_cast<char*>(m_pointer) + 0xC) = cap;
@@ -108,6 +111,7 @@ uint32_t CDataStore::GetBytesWritten() const {
 }
 
 void CDataStore::SetBytesWritten(uint32_t written) {
+    (void)written;
 #ifdef _WIN32
     if (!m_pointer) return;
     *reinterpret_cast<uint32_t*>(static_cast<char*>(m_pointer) + 0x10) = written;
@@ -231,6 +235,7 @@ float CDataStore::GetFloat() {
 }
 
 std::string CDataStore::GetString(int length) {
+    (void)length;
 #ifdef _WIN32
     if (!m_pointer) return "";
     typedef void* (__thiscall *GetString_t)(void*, char*, int);

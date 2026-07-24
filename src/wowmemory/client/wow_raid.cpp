@@ -21,6 +21,7 @@ uint32_t WoWRaid::Difficulty() {
 }
 
 uint64_t WoWRaid::GetRaidMemberGuid(int index) {
+    (void)index;
 #ifdef _WIN32
     uint32_t ptr = ReadAbs<uint32_t>(WoWOffsets::Raid::RaidArray + index * sizeof(uint32_t));
     if (ptr) {

@@ -5,7 +5,7 @@
 </head>
 <body data-model="wow">
     <div id="overlay">
-        <h1>WoW Game State</h1>
+        <h1>ElvUI Game Panel</h1>
 
         <h2>Identity</h2>
         <div class="stat">
@@ -53,21 +53,11 @@
             <span class="value">X:{{corpseX | round(2)}}, Y:{{corpseY | round(2)}}</span>
         </div>
 
-        <h2>Casting & Interactions</h2>
-        <div class="stat">
-            <span class="label">Casting Spell ID:</span>
-            <span class="value-red">{{castingSpellId > 0 ? castingSpellId : 'None'}}</span>
-        </div>
-        <div class="stat">
-            <span class="label">Channeling Spell ID:</span>
-            <span class="value-red">{{channelSpellId > 0 ? channelSpellId : 'None'}}</span>
-        </div>
+        <h2>Interactions & System</h2>
         <div class="stat" data-show="mouseOverGUID != 0">
             <span class="label">Mouseover GUID:</span>
             <span class="value-blue">0x{{mouseOverGUID | format_to_hex}}</span>
         </div>
-
-        <h2>System State</h2>
         <div class="stat">
             <span class="label">Game State Code:</span>
             <span class="value">{{gameState}}</span>
@@ -87,7 +77,7 @@
 
         <h2>Combat Log</h2>
         <div id="combat-log" data-show="playerIsIngame">
-            <div class="log-entry" data-for="entry: combatLog">{{entry}}</div>
+            <div class="log-entry" data-for="entry : combatLog">{{entry}}</div>
         </div>
     </div>
 </body>

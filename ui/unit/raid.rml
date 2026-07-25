@@ -20,24 +20,27 @@
         .raid-member {
             width: 55dp;
             height: 40dp;
-            background-color: rgba(15, 15, 18, 0.88);
+            background-color: rgba(16, 16, 16, 0.95);
             border-width: 1dp;
             border-style: solid;
-            border-color: #333333;
-            border-radius: 2dp;
+            border-color: #2d2d2d;
+            border-radius: 0dp; /* Sharp corners */
             position: relative;
             overflow: hidden;
         }
         .raid-member-dead {
-            border-color: #991b1b;
-            background-color: #4c0519;
+            border-color: #801010;
+            background-color: rgba(48, 12, 12, 0.95);
+        }
+        .member-out-of-range {
+            opacity: 0.55;
         }
         .raid-hp {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            background-color: #228b22; /* Classic Green */
+            background-color: #29a744; /* ElvUI vibrant green */
         }
         .raid-name {
             position: absolute;
@@ -58,7 +61,7 @@
             text-align: center;
             font-size: 8dp;
             font-weight: bold;
-            color: #ef4444;
+            color: #ff3333;
         }
     </style>
 </head>

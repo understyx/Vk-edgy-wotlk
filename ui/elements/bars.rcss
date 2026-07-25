@@ -1,28 +1,31 @@
-/* Shared Unit Frame styles */
+/* ElvUI style Unit Frame styles */
 .unit-frame {
     position: absolute;
     width: 250dp;
-    background-color: rgba(10, 10, 12, 0.88);
-    border-width: 2dp;
+    background-color: rgba(16, 16, 16, 0.95);
+    border-width: 1dp;
     border-style: solid;
-    border-color: #3d3d3d;
-    border-radius: 6dp;
-    padding: 8dp;
+    border-color: #2d2d2d;
+    border-radius: 0dp; /* Sharp corners */
+    padding: 4dp;
 }
 
+/* Header integrated inside bar now, but fallback classes retained */
 .unit-header {
-    margin-bottom: 4dp;
+    margin-bottom: 2dp;
+    display: block;
+    clear: both;
 }
 
 .unit-name {
-    font-size: 14dp;
+    font-size: 12dp;
     font-weight: bold;
     color: #ffffff;
     float: left;
 }
 
 .unit-level {
-    font-size: 12dp;
+    font-size: 11dp;
     font-weight: bold;
     color: #ffd100; /* WoW gold */
     float: right;
@@ -31,72 +34,111 @@
 /* Bar styles */
 .bar-container {
     height: 18dp;
-    background-color: #0d0d0d;
+    background-color: #111111; /* Dark backdrop representing empty bar */
     border-width: 1dp;
     border-style: solid;
-    border-color: #3a3a3a;
+    border-color: #2d2d2d;
     position: relative;
-    border-radius: 3dp;
+    border-radius: 0dp; /* Sharp corners */
     overflow: hidden;
-    margin-bottom: 4dp;
+    margin-bottom: 3dp;
     clear: both;
+}
+
+/* Specific heights for health vs power to mimic ElvUI */
+.hp-container {
+    height: 26dp;
+}
+
+.power-container {
+    height: 11dp;
+    margin-bottom: 0dp; /* No extra spacing below power bar */
 }
 
 .bar-fill {
     height: 100%;
 }
 
-.bar-text {
+/* Overlay Text Positions */
+.bar-text-left {
     position: absolute;
-    top: 2dp;
-    width: 100%;
-    text-align: center;
+    left: 6dp;
+    top: 5dp;
     font-size: 11dp;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.bar-text-right {
+    position: absolute;
+    right: 6dp;
+    top: 5dp;
+    font-size: 11dp;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.power-text-left {
+    position: absolute;
+    left: 6dp;
+    top: -1dp;
+    font-size: 9dp;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.power-text-right {
+    position: absolute;
+    right: 6dp;
+    top: -1dp;
+    font-size: 9dp;
     font-weight: bold;
     color: #ffffff;
 }
 
 /* Health Bar Colors */
 .hp-fill {
-    background-color: #228b22; /* Classic Green */
+    background-color: #29a744; /* ElvUI vibrant green */
 }
 
 /* Power Bar Colors by Type */
 .power-fill {
-    background-color: #8b5cf6; /* Purple default */
+    background-color: #8552f6; /* Modern flat default purple */
 }
 .power-fill.pt-0 {
-    background-color: #0000ff; /* Mana: Blue */
+    background-color: #0076fe; /* Mana: Blue */
 }
 .power-fill.pt-1 {
-    background-color: #ff0000; /* Rage: Red */
+    background-color: #df2c2c; /* Rage: Red */
 }
 .power-fill.pt-3 {
-    background-color: #ffff00; /* Energy: Yellow */
+    background-color: #f5cb2b; /* Energy: Yellow */
 }
 .power-fill.pt-6 {
-    background-color: #00ccff; /* Runic Power: Cyan */
+    background-color: #00bffe; /* Runic Power: Cyan */
 }
 
 /* Aura list */
 .auras-container {
-    margin-top: 4dp;
+    margin-top: 5dp;
     clear: both;
 }
 
 .aura-title {
     font-size: 10dp;
-    color: #888888;
-    margin-bottom: 2dp;
+    color: #a0a0a0;
+    margin-bottom: 3dp;
+    font-weight: bold;
+    text-transform: uppercase;
 }
 
 .aura-badge {
     display: inline-block;
-    background-color: #1a1a24;
+    background-color: #121212;
     border-width: 1dp;
     border-style: solid;
-    border-color: #4a4a6a;
-    border-radius: 4dp;
+    border-color: #2d2d2d;
+    border-radius: 0dp; /* Square aura badges */
     padding: 1dp 4dp;
     margin-right: 3dp;
     margin-bottom: 3dp;

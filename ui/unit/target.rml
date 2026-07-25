@@ -6,7 +6,7 @@
     <style>
         body {
             position: absolute;
-            right: 150dp;
+            right: 220dp;
             bottom: 120dp;
             width: 250dp;
             height: 120dp;
@@ -15,26 +15,23 @@
 </head>
 <body data-model="wow">
     <div class="unit-frame" data-show="targetName != ''">
-        <div class="unit-header">
-            <span class="unit-name">{{targetName}}</span>
-            <span class="unit-level">Lv{{targetLevel}}</span>
-        </div>
-
-        <!-- Health Bar -->
-        <div class="bar-container">
+        <!-- Health Bar with overlay text -->
+        <div class="bar-container hp-container">
             <div class="bar-fill hp-fill" style="width: {{ targetMaxHealth > 0 ? (targetHealth * 100 / targetMaxHealth) : 0 }}%;"></div>
-            <div class="bar-text">{{targetHealth}} / {{targetMaxHealth}}</div>
+            <div class="bar-text-left">{{targetName}} <span style="color: #ffd100; font-size: 10dp;">Lv{{targetLevel}}</span></div>
+            <div class="bar-text-right">{{targetHealth}} / {{targetMaxHealth}}</div>
         </div>
 
-        <!-- Power Bar -->
-        <div class="bar-container">
+        <!-- Power Bar with overlay text -->
+        <div class="bar-container power-container">
             <div class="bar-fill power-fill pt-{{targetPowerType}}" style="width: {{ targetMaxPower > 0 ? (targetPower * 100 / targetMaxPower) : 0 }}%;"></div>
-            <div class="bar-text">{{targetPower}} / {{targetMaxPower}}</div>
+            <div class="power-text-left">POWER</div>
+            <div class="power-text-right">{{targetPower}} / {{targetMaxPower}}</div>
         </div>
 
-        <!-- Auras -->
+        <!-- Auras below -->
         <div class="auras-container" data-show="targetAuras.size > 0">
-            <div class="aura-title">Target Buffs/Debuffs:</div>
+            <div class="aura-title">Target Buffs & Debuffs</div>
             <span class="aura-badge" data-for="spellId : targetAuras">ID: {{spellId}}</span>
         </div>
     </div>

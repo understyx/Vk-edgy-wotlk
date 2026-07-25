@@ -3,7 +3,7 @@ body
     margin: 0;
     padding: 0;
     font-family: "DejaVu Sans";
-    font-size: 13dp;
+    font-size: 12dp;
     color: #ffffff;
 }
 
@@ -12,34 +12,44 @@ body
     position: absolute;
     top: 20dp;
     right: 20dp;
-    width: 330dp;
-    background-color: rgba(10, 24, 48, 0.85); /* Semi-transparent blue */
-    border-width: 2dp;
+    width: 320dp;
+    background-color: rgba(16, 16, 16, 0.92); /* Solid dark ElvUI background */
+    border-width: 1dp;
     border-style: solid;
-    border-color: #1e3a8a; /* Glowing dark blue border */
-    border-radius: 8dp;
-    padding: 12dp 15dp;
+    border-color: #2d2d2d; /* Sharp ElvUI 1px border */
+    border-radius: 0dp; /* 0 border-radius for classic sharp ElvUI look */
+    padding: 10dp 12dp;
 }
 
 h1
 {
     margin: 0 0 10dp 0;
-    font-size: 16dp;
+    font-size: 14dp;
     font-weight: bold;
-    color: #60a5fa; /* Light blue */
+    color: #ffffff;
     text-align: center;
+    background-color: #1a1a1a;
+    border-width: 1dp;
+    border-style: solid;
+    border-color: #2d2d2d;
+    border-radius: 0dp;
+    padding: 5dp;
+    text-transform: uppercase;
 }
 
 h2
 {
-    margin: 10dp 0 4dp 0;
-    font-size: 12dp;
+    margin: 12dp 0 6dp 0;
+    font-size: 11dp;
     font-weight: bold;
-    color: #93c5fd; /* Soft light blue */
-    border-bottom-width: 1dp;
-    border-bottom-color: #1e3a8a;
-    border-bottom-style: solid;
-    padding-bottom: 2dp;
+    color: #00bffe; /* Light blue/cyan theme */
+    background-color: #1a1a1a;
+    border-width: 1dp;
+    border-style: solid;
+    border-color: #2d2d2d;
+    border-radius: 0dp;
+    padding: 4dp 6dp;
+    text-transform: uppercase;
 }
 
 .stat
@@ -51,44 +61,49 @@ h2
 
 .label
 {
-    color: #94a3b8; /* Cool gray */
+    color: #a0a0a0; /* Clean medium gray */
     display: inline-block;
-    width: 160dp;
+    width: 150dp;
+    font-size: 11dp;
 }
 
 .value
 {
-    color: #34d399; /* Emerald green */
+    color: #2ebc54; /* ElvUI-like vibrant green */
     font-weight: bold;
+    font-size: 11dp;
 }
 
 .value-blue
 {
-    color: #60a5fa; /* Blue */
+    color: #00bffe; /* Vibrant cyan */
     font-weight: bold;
+    font-size: 11dp;
 }
 
 .value-red
 {
-    color: #f87171; /* Soft red */
+    color: #f84b4b; /* Vibrant red */
     font-weight: bold;
+    font-size: 11dp;
 }
 
 #combat-log
 {
-    height: 110dp;
-    background-color: rgba(15, 23, 42, 0.6);
+    height: 120dp;
+    background-color: rgba(10, 10, 10, 0.95);
     border-width: 1dp;
     border-style: solid;
-    border-color: #1e293b;
-    padding: 4dp;
+    border-color: #2d2d2d;
+    border-radius: 0dp;
+    padding: 6dp;
     font-size: 10dp;
     overflow-y: hidden;
 }
 
 .log-entry
 {
-    color: #cbd5e1;
+    color: #dcdcdc;
     margin-bottom: 2dp;
     white-space: nowrap;
 }

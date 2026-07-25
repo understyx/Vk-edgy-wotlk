@@ -14,58 +14,61 @@
         .party-container {
             display: flex;
             flex-direction: column;
-            gap: 10dp;
+            gap: 8dp;
         }
         .party-member {
-            background-color: rgba(10, 10, 12, 0.85);
+            background-color: rgba(16, 16, 16, 0.95);
             border-width: 1dp;
             border-style: solid;
-            border-color: #3d3d3d;
-            border-radius: 4dp;
-            padding: 6dp;
+            border-color: #2d2d2d;
+            border-radius: 0dp; /* Sharp corners */
+            padding: 5dp;
             width: 150dp;
         }
         .party-member-dead {
-            border-color: #991b1b;
-            background-color: rgba(40, 10, 10, 0.85);
+            border-color: #801010;
+            background-color: rgba(48, 12, 12, 0.95);
+        }
+        .member-out-of-range {
+            opacity: 0.55;
         }
         .party-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 4dp;
+            margin-bottom: 3dp;
         }
         .party-name {
-            font-size: 12dp;
+            font-size: 11dp;
             font-weight: bold;
             color: #ffffff;
-            width: 100dp;
+            width: 105dp;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .party-dead-text {
-            font-size: 11dp;
+            font-size: 10dp;
             font-weight: bold;
-            color: #ef4444;
+            color: #ff3333;
         }
         .party-bar {
-            height: 12dp;
-            background-color: #0d0d0d;
+            height: 14dp;
+            background-color: #111111;
             border-width: 1dp;
             border-style: solid;
-            border-color: #2a2a2a;
+            border-color: #2c2c2c;
             position: relative;
-            margin-bottom: 4dp;
-            border-radius: 2dp;
+            margin-bottom: 2dp;
+            border-radius: 0dp; /* Sharp corners */
             overflow: hidden;
         }
         .party-hp-fill {
             height: 100%;
-            background-color: #228b22; /* Classic green */
+            background-color: #29a744; /* ElvUI vibrant green */
         }
         .party-hp-text {
             position: absolute;
-            top: 1dp;
+            top: 0dp;
             width: 100%;
             text-align: center;
             font-size: 9dp;
@@ -75,16 +78,16 @@
         .party-auras {
             display: flex;
             flex-wrap: wrap;
-            gap: 3dp;
-            margin-top: 2dp;
+            gap: 2dp;
+            margin-top: 3dp;
         }
         .party-aura {
             font-size: 8dp;
-            background-color: #1a1a24;
+            background-color: #121212;
             border-width: 1dp;
             border-style: solid;
-            border-color: #4a4a6a;
-            border-radius: 2dp;
+            border-color: #2d2d2d;
+            border-radius: 0dp; /* Sharp corners */
             padding: 0dp 3dp;
             color: #ffd100;
         }

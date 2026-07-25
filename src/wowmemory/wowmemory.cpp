@@ -52,18 +52,46 @@ static GroupMemberData PopulateGroupMemberStats(uint64_t guid) {
     GroupMemberData member;
     member.guid = guid;
     uintptr_t baseAddress = GetObjectBaseByGUID(guid);
+    bool statsPopulated = false;
+
     if (baseAddress) {
         member.name = GetUnitName(guid, baseAddress);
         uintptr_t fieldsPtr = *reinterpret_cast<const uintptr_t*>(baseAddress + WoWOffsets::objectDescriptorOffset);
         if (fieldsPtr) {
             if (IsReadableRange(fieldsPtr + WoWOffsets::unitFieldHealth, sizeof(uint32_t))) {
                 member.health = *reinterpret_cast<const uint32_t*>(fieldsPtr + WoWOffsets::unitFieldHealth);
+                statsPopulated = true;
             }
             if (IsReadableRange(fieldsPtr + WoWOffsets::unitFieldMaxHealth, sizeof(uint32_t))) {
                 member.maxHealth = *reinterpret_cast<const uint32_t*>(fieldsPtr + WoWOffsets::unitFieldMaxHealth);
             }
         }
         member.auraCount = ReadAurasForUnit(baseAddress, member.auras, GroupMemberData::kMaxAuras);
+    }
+
+    if (!statsPopulated) {
+        int partyIndex = -1;
+        for (int i = 0; i < 5; ++i) {
+            if (WoWParty::GetPartyMemberGuid(i) == guid) {
+                partyIndex = i;
+                break;
+            }
+        }
+        if (partyIndex != -1) {
+            uint32_t entryAddr = WoWOffsets::Party::PartyMemberCache::Base + partyIndex * WoWOffsets::Party::PartyMemberCache::Stride;
+            uint32_t healthAddr = entryAddr + WoWOffsets::Party::PartyMemberCache::Health;
+            uint32_t maxHealthAddr = entryAddr + WoWOffsets::Party::PartyMemberCache::MaxHealth;
+
+            if (IsReadableRange(healthAddr, sizeof(uint32_t))) {
+                member.health = *reinterpret_cast<const uint32_t*>(healthAddr);
+            }
+            if (IsReadableRange(maxHealthAddr, sizeof(uint32_t))) {
+                member.maxHealth = *reinterpret_cast<const uint32_t*>(maxHealthAddr);
+            }
+        }
+        if (member.name.empty()) {
+            member.name = GetUnitName(guid, 0);
+        }
     }
     return member;
 }

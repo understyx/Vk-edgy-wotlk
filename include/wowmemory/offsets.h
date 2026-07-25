@@ -548,6 +548,20 @@ namespace Other {
 namespace Party {
     constexpr uint32_t PartyArray = 0x00BD1948;
     constexpr uint32_t DungeonDifficulty = 0x00BD0898;
+
+    namespace PartyMemberCache {
+        constexpr uint32_t Base = 0x00BE8F90;
+        constexpr uint32_t Stride = 0x310;
+        constexpr uint32_t Health = 0x0C;
+        constexpr uint32_t MaxHealth = 0x10;
+    }
+
+    namespace PartyMemberReadyCache {
+        constexpr uint32_t Base = 0x00BE90F0;
+        constexpr uint32_t Stride = 0x310;
+        constexpr uint32_t Health = 0x5C;
+        constexpr uint32_t MaxHealth = 0x60;
+    }
 }
 
 namespace Raid {

@@ -6,7 +6,7 @@
     <style>
         body {
             position: absolute;
-            left: 150dp;
+            left: 220dp;
             bottom: 120dp;
             width: 250dp;
             height: 120dp;
@@ -15,26 +15,23 @@
 </head>
 <body data-model="wow">
     <div class="unit-frame" data-show="playerIsIngame">
-        <div class="unit-header">
-            <span class="unit-name">{{playerName}}</span>
-            <span class="unit-level">Lv{{playerLevel}}</span>
-        </div>
-
-        <!-- Health Bar -->
-        <div class="bar-container">
+        <!-- Health Bar with overlay text -->
+        <div class="bar-container hp-container">
             <div class="bar-fill hp-fill" style="width: {{ playerMaxHealth > 0 ? (playerHealth * 100 / playerMaxHealth) : 0 }}%;"></div>
-            <div class="bar-text">{{playerHealth}} / {{playerMaxHealth}}</div>
+            <div class="bar-text-left">{{playerName}} <span style="color: #ffd100; font-size: 10dp;">Lv{{playerLevel}}</span></div>
+            <div class="bar-text-right">{{playerHealth}} / {{playerMaxHealth}}</div>
         </div>
 
-        <!-- Power Bar -->
-        <div class="bar-container">
+        <!-- Power Bar with overlay text -->
+        <div class="bar-container power-container">
             <div class="bar-fill power-fill pt-{{playerPowerType}}" style="width: {{ playerMaxPower > 0 ? (playerPower * 100 / playerMaxPower) : 0 }}%;"></div>
-            <div class="bar-text">{{playerPower}} / {{playerMaxPower}}</div>
+            <div class="power-text-left">POWER</div>
+            <div class="power-text-right">{{playerPower}} / {{playerMaxPower}}</div>
         </div>
 
-        <!-- Auras -->
+        <!-- Auras below -->
         <div class="auras-container" data-show="playerAuras.size > 0">
-            <div class="aura-title">Player Buffs/Debuffs:</div>
+            <div class="aura-title">Buffs & Debuffs</div>
             <span class="aura-badge" data-for="spellId : playerAuras">ID: {{spellId}}</span>
         </div>
     </div>

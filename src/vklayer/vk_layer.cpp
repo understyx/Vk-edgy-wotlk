@@ -1,5 +1,6 @@
 #include "vklayer/vk_layer.h"
 #include "rmlui/OverlayUI.h"
+#include "vklayer/discord_presence.h"
 
 #include <cstdio>
 #include <cstring>
@@ -9,11 +10,36 @@
 #include <vector>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <fstream>
+#include <iterator>
 
 namespace WoTLKGuiLayer {
 
 // Global overlay context
 OverlayContext gOverlay;
+
+bool HasLaunchOption(const std::string& option)
+{
+    std::ifstream ifs("/proc/self/cmdline", std::ios::binary);
+    if (!ifs.is_open()) return false;
+    std::vector<char> buffer((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+
+    std::string current;
+    for (char c : buffer) {
+        if (c == '\0') {
+            if (current == option) {
+                return true;
+            }
+            current.clear();
+        } else {
+            current.push_back(c);
+        }
+    }
+    if (!current.empty() && current == option) {
+        return true;
+    }
+    return false;
+}
 
 // ============================================================================
 // Path helpers
@@ -120,6 +146,9 @@ static void TryInitRmlUi(const vkroots::VkDeviceDispatch& dispatch)
     gOverlay.rmlInitialized = true;
     fprintf(stdout, "[WoTLKLayer] RmlUi overlay initialised (%ux%u)\n",
             gOverlay.extent.width, gOverlay.extent.height);
+
+    // Start Discord rich presence if requested
+    gDiscordPresence.Start();
 
     // Launch the 32-bit Windows DLL injector in the background using a double-fork detach.
     pid_t pid = fork();

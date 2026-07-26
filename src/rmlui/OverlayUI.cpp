@@ -1,5 +1,6 @@
 #include "OverlayUI.h"
 #include "wowmemory/offsets.h"
+#include "vklayer/vk_layer.h"
 #include <cstdio>
 #include <cstring>
 
@@ -196,44 +197,48 @@ void OverlayUI::ResizeSwapchain(const std::vector<VkImage>& images,
     RegisterLuaGlobals();
 #endif
 
-    // Load the overlay document
-    m_document = m_context->LoadDocument("overlay.rml");
-    if (!m_document) {
-        fprintf(stderr, "[RmlUi] Failed to load overlay.rml\n");
-        return;
-    }
-    m_document->Show();
-
-    // Load Player Unit Frame
-    m_playerDoc = m_context->LoadDocument("unit/player.rml");
-    if (!m_playerDoc) {
-        fprintf(stderr, "[RmlUi] Failed to load unit/player.rml\n");
+    if (HasLaunchOption("--disable-rmlui")) {
+        fprintf(stdout, "[WoTLKLayer] --disable-rmlui detected. Skipping RmlUi documents loading.\n");
     } else {
-        m_playerDoc->Show();
-    }
+        // Load the overlay document
+        m_document = m_context->LoadDocument("overlay.rml");
+        if (!m_document) {
+            fprintf(stderr, "[RmlUi] Failed to load overlay.rml\n");
+        } else {
+            m_document->Show();
+        }
 
-    // Load Target Unit Frame
-    m_targetDoc = m_context->LoadDocument("unit/target.rml");
-    if (!m_targetDoc) {
-        fprintf(stderr, "[RmlUi] Failed to load unit/target.rml\n");
-    } else {
-        m_targetDoc->Show();
-    }
+        // Load Player Unit Frame
+        m_playerDoc = m_context->LoadDocument("unit/player.rml");
+        if (!m_playerDoc) {
+            fprintf(stderr, "[RmlUi] Failed to load unit/player.rml\n");
+        } else {
+            m_playerDoc->Show();
+        }
 
-    // Load Party Frames
-    m_partyDoc = m_context->LoadDocument("unit/party.rml");
-    if (!m_partyDoc) {
-        fprintf(stderr, "[RmlUi] Failed to load unit/party.rml\n");
-    } else {
-        m_partyDoc->Show();
-    }
+        // Load Target Unit Frame
+        m_targetDoc = m_context->LoadDocument("unit/target.rml");
+        if (!m_targetDoc) {
+            fprintf(stderr, "[RmlUi] Failed to load unit/target.rml\n");
+        } else {
+            m_targetDoc->Show();
+        }
 
-    // Load Raid Frames
-    m_raidDoc = m_context->LoadDocument("unit/raid.rml");
-    if (!m_raidDoc) {
-        fprintf(stderr, "[RmlUi] Failed to load unit/raid.rml\n");
-    } else {
-        m_raidDoc->Show();
+        // Load Party Frames
+        m_partyDoc = m_context->LoadDocument("unit/party.rml");
+        if (!m_partyDoc) {
+            fprintf(stderr, "[RmlUi] Failed to load unit/party.rml\n");
+        } else {
+            m_partyDoc->Show();
+        }
+
+        // Load Raid Frames
+        m_raidDoc = m_context->LoadDocument("unit/raid.rml");
+        if (!m_raidDoc) {
+            fprintf(stderr, "[RmlUi] Failed to load unit/raid.rml\n");
+        } else {
+            m_raidDoc->Show();
+        }
     }
 
     // Recreate sync objects for the new image count

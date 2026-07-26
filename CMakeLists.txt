@@ -33,11 +33,6 @@ FetchContent_Declare(
     GIT_SHALLOW    TRUE
 )
 
-FetchContent_Declare(
-    json
-    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
-)
-
 # Build only the core library; disable samples and tests
 set(RMLUI_SAMPLES_BACKEND "None"   CACHE STRING "" FORCE)
 set(BUILD_SAMPLES          OFF     CACHE BOOL   "" FORCE)
@@ -54,7 +49,7 @@ else()
     set(RMLUI_LUA_BINDINGS OFF CACHE BOOL "" FORCE)
 endif()
 
-FetchContent_MakeAvailable(RmlUi json)
+FetchContent_MakeAvailable(RmlUi)
 
 # ===========================================================================
 # Shader compilation
@@ -102,7 +97,6 @@ endif()
 set(VKLAYER_SOURCES
     src/main.cpp
     src/vklayer/vk_layer.cpp
-    src/vklayer/discord_presence.cpp
     src/rmlui/SystemInterface.cpp
     src/rmlui/FileInterface.cpp
     src/rmlui/VulkanRenderer.cpp
@@ -143,7 +137,6 @@ endif()
 target_link_libraries(vklayer_understyx_wotlk
     PRIVATE
         RmlUi::Core
-        nlohmann_json::nlohmann_json
         dl
         $<$<BOOL:${Vulkan_FOUND}>:${VULKAN_LIBRARIES}>
         $<$<BOOL:${LUA_FOUND}>:RmlUi::Lua>

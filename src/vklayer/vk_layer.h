@@ -42,11 +42,6 @@ struct OverlayContext
 extern OverlayContext gOverlay;
 
 /**
- * @brief Helper function to check if a launch option was passed to the process.
- */
-bool HasLaunchOption(const std::string& option);
-
-/**
  * @class VkInstanceOverrides
  * @brief Intercepts Vulkan instance-level function calls
  */

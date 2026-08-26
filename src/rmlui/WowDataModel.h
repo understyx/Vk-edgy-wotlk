@@ -54,6 +54,9 @@ private:
     // int because RmlUi's data binding converts int → "0"/"1" reliably.
     Rml::String m_playerName;
     Rml::String m_realmName;
+    Rml::String m_localPlayerGUID;
+    Rml::String m_mouseOverGUID;
+    int         m_hasMouseOverGUID = 0;
     Rml::String m_continentName;
     Rml::String m_zoneText;
     Rml::String m_subZoneText;
@@ -94,6 +97,7 @@ private:
     float       m_corpseX       = 0.0f;
     float       m_corpseY       = 0.0f;
     float       m_corpseZ       = 0.0f;
+    Rml::String m_corpseCoordinates;
 
     Rml::Vector<int>         m_playerAuras;
     Rml::Vector<int>         m_targetAuras;

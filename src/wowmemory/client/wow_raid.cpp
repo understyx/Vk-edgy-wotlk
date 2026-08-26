@@ -4,9 +4,14 @@
 
 namespace WoWMemory {
 
+namespace {
+constexpr int kMaximumRaidMembers = 40;
+}
+
 int WoWRaid::NumRaidMembers() {
 #ifdef _WIN32
-    return ReadAbs<int>(WoWOffsets::Raid::RaidCount);
+    const int count = ReadAbs<int>(WoWOffsets::Raid::RaidCount);
+    return (count >= 0 && count <= kMaximumRaidMembers) ? count : 0;
 #else
     return 0;
 #endif
@@ -22,6 +27,9 @@ uint32_t WoWRaid::Difficulty() {
 
 uint64_t WoWRaid::GetRaidMemberGuid(int index) {
 #ifdef _WIN32
+    if (index < 0 || index >= kMaximumRaidMembers) {
+        return 0;
+    }
     uint32_t ptr = ReadAbs<uint32_t>(WoWOffsets::Raid::RaidArray + index * sizeof(uint32_t));
     if (ptr) {
         return ReadAbs<uint64_t>(ptr);

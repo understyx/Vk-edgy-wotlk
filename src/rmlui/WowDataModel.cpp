@@ -4,6 +4,25 @@
 
 namespace WoTLKGuiLayer {
 
+namespace {
+
+Rml::String FormatGuid(uint64_t guid)
+{
+    char buffer[24];
+    std::snprintf(buffer, sizeof(buffer), "0x%016llX",
+                  static_cast<unsigned long long>(guid));
+    return buffer;
+}
+
+Rml::String FormatCoordinates(float x, float y, float z)
+{
+    char buffer[96];
+    std::snprintf(buffer, sizeof(buffer), "X: %.2f, Y: %.2f, Z: %.2f", x, y, z);
+    return buffer;
+}
+
+} // namespace
+
 bool WowDataModel::Initialise(Rml::Context* context)
 {
     Rml::DataModelConstructor c = context->CreateDataModel("wow");
@@ -15,6 +34,9 @@ bool WowDataModel::Initialise(Rml::Context* context)
     // Identity
     c.Bind("playerName",    &m_playerName);
     c.Bind("realmName",     &m_realmName);
+    c.Bind("localPlayerGUID", &m_localPlayerGUID);
+    c.Bind("mouseOverGUID",   &m_mouseOverGUID);
+    c.Bind("hasMouseOverGUID", &m_hasMouseOverGUID);
 
     // World
     c.Bind("continentName", &m_continentName);
@@ -59,6 +81,7 @@ bool WowDataModel::Initialise(Rml::Context* context)
     c.Bind("corpseX", &m_corpseX);
     c.Bind("corpseY", &m_corpseY);
     c.Bind("corpseZ", &m_corpseZ);
+    c.Bind("corpseCoordinates", &m_corpseCoordinates);
 
     // Register arrays for auras and combat log
     c.RegisterArray<Rml::Vector<int>>();
@@ -123,6 +146,18 @@ void WowDataModel::Update(const WoWMemory::GameData& data)
         m_handle.DirtyVariable("targetName");
     }
 
+    const Rml::String localPlayerGuid = FormatGuid(data.localPlayerGUID);
+    if (m_localPlayerGUID != localPlayerGuid) {
+        m_localPlayerGUID = localPlayerGuid;
+        m_handle.DirtyVariable("localPlayerGUID");
+    }
+    const Rml::String mouseOverGuid = FormatGuid(data.mouseOverGUID);
+    if (m_mouseOverGUID != mouseOverGuid) {
+        m_mouseOverGUID = mouseOverGuid;
+        m_handle.DirtyVariable("mouseOverGUID");
+    }
+    DIRTY_IF_CHANGED(m_hasMouseOverGUID, "hasMouseOverGUID", data.mouseOverGUID != 0 ? 1 : 0);
+
     // Numeric / bool fields — keep internal mirrors as int
     DIRTY_IF_CHANGED(m_mapID,          "mapID",          static_cast<int>(data.mapID));
     DIRTY_IF_CHANGED(m_zoneID,         "zoneID",         static_cast<int>(data.zoneID));
@@ -157,6 +192,11 @@ void WowDataModel::Update(const WoWMemory::GameData& data)
     if (m_corpseX != data.corpseX) { m_corpseX = data.corpseX; m_handle.DirtyVariable("corpseX"); }
     if (m_corpseY != data.corpseY) { m_corpseY = data.corpseY; m_handle.DirtyVariable("corpseY"); }
     if (m_corpseZ != data.corpseZ) { m_corpseZ = data.corpseZ; m_handle.DirtyVariable("corpseZ"); }
+    const Rml::String corpseCoordinates = FormatCoordinates(data.corpseX, data.corpseY, data.corpseZ);
+    if (m_corpseCoordinates != corpseCoordinates) {
+        m_corpseCoordinates = corpseCoordinates;
+        m_handle.DirtyVariable("corpseCoordinates");
+    }
 
     // Update Player Auras
     bool playerAurasChanged = false;

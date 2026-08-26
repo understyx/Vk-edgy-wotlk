@@ -9,6 +9,7 @@
  */
 
 #include "wowmemory/wowmemory.h"
+#include "wowmemory/client_profile.h"
 #include "wowmemory/offsets.h"
 #include "wowmemory/memory_utils.h"
 #include "wowmemory/auras.h"
@@ -71,7 +72,7 @@ static GroupMemberData PopulateGroupMemberStats(uint64_t guid) {
 
     if (!statsPopulated) {
         int partyIndex = -1;
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 4; ++i) {
             if (WoWParty::GetPartyMemberGuid(i) == guid) {
                 partyIndex = i;
                 break;
@@ -239,15 +240,19 @@ bool GameDataReader::ReadGameData(GameData& out)
 
 bool GameDataReader::ReadGameData(GameData& out)
 {
+    if (!GetClientProfileStatus().supported) {
+        return false;
+    }
+
     // ---- Identity ----
     out.playerName      = ReadInlineString(WoWOffsets::playerName, 12);
     out.realmName       = ReadInlineString(WoWOffsets::realmName, 64);
     out.localPlayerGUID = ReadAbs<uint64_t>(WoWOffsets::localPlayerGUID);
 
     // ---- World location ----
-    // continentName, zoneText and subZoneText are char* pointers stored at
-    // those addresses (the pointer holds the address of the string buffer).
-    out.continentName = ReadIndirectString(WoWOffsets::continentName);
+    // The internal map name is an inline 260-byte buffer. Zone/sub-zone are
+    // pointers to client-owned strings.
+    out.continentName = ReadInlineString(WoWOffsets::continentName, 260);
     out.zoneText      = ReadIndirectString(WoWOffsets::zoneText);
     out.subZoneText   = ReadIndirectString(WoWOffsets::subZoneText);
     out.mapID         = ReadAbs<uint32_t>(WoWOffsets::mapID);
@@ -255,7 +260,7 @@ bool GameDataReader::ReadGameData(GameData& out)
 
     // ---- Game state ----
     out.gameState    = ReadAbs<uint32_t>(WoWOffsets::gameState);
-    out.worldLoaded  = ReadAbs<uint8_t>(WoWOffsets::worldLoaded) != 0;
+    out.worldLoaded  = ReadAbs<uint32_t>(WoWOffsets::worldLoaded) != 0;
     out.isLoading    = ReadAbs<uint8_t>(WoWOffsets::isLoading)   != 0;
     out.isIndoor     = ReadAbs<uint8_t>(WoWOffsets::isIndoor)    != 0;
     out.tickCount    = ReadAbs<uint32_t>(WoWOffsets::tickCount);

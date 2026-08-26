@@ -119,28 +119,23 @@ void ReadPlayerPosition(uintptr_t playerBasePtr, GameData& out)
 
 void ReadCameraInfo(GameData& out)
 {
-    // Chain: *(cameraBasePtrOffset) + cameraOffset1 -> ptr -> + cameraOffset2 -> camera struct
-    uintptr_t camPtr1 = ReadAbs<uint32_t>(WoWOffsets::cameraBasePtrOffset);
-    if (camPtr1) {
-        uintptr_t camPtr2Addr = camPtr1 + WoWOffsets::cameraOffset1;
-        if (IsReadableRange(camPtr2Addr, sizeof(uint32_t))) {
-            uintptr_t camPtr2 = *reinterpret_cast<const uint32_t*>(camPtr2Addr);
-            if (camPtr2) {
-                uintptr_t camStructAddr = camPtr2 + WoWOffsets::cameraOffset2;
-                if (IsReadableRange(camStructAddr, sizeof(uint32_t))) {
-                    uintptr_t camStruct = *reinterpret_cast<const uint32_t*>(camStructAddr);
-                    if (camStruct) {
-                        uintptr_t yawAddr   = camStruct + WoWOffsets::cameraYawOffset;
-                        uintptr_t pitchAddr = camStruct + WoWOffsets::cameraPitchOffset;
-                        if (IsReadableRange(yawAddr, sizeof(float)))
-                            out.cameraYaw = *reinterpret_cast<const float*>(yawAddr);
-                        if (IsReadableRange(pitchAddr, sizeof(float)))
-                            out.cameraPitch = *reinterpret_cast<const float*>(pitchAddr);
-                    }
-                }
-            }
-        }
-    }
+    // CWorldFrame::GetActiveCamera: *WorldFrame, then the camera pointer at
+    // WorldFrame + 0x7E20.
+    const uintptr_t worldFrame = ReadAbs<uint32_t>(WoWOffsets::Drawing::WorldFrame);
+    if (!worldFrame) return;
+
+    const uintptr_t cameraPtrAddress = worldFrame + WoWOffsets::Drawing::ActiveCamera;
+    if (!IsReadableRange(cameraPtrAddress, sizeof(uint32_t))) return;
+
+    const uintptr_t camera = *reinterpret_cast<const uint32_t*>(cameraPtrAddress);
+    if (!camera) return;
+
+    const uintptr_t yawAddress = camera + WoWOffsets::cameraYawOffset;
+    const uintptr_t pitchAddress = camera + WoWOffsets::cameraPitchOffset;
+    if (IsReadableRange(yawAddress, sizeof(float)))
+        out.cameraYaw = *reinterpret_cast<const float*>(yawAddress);
+    if (IsReadableRange(pitchAddress, sizeof(float)))
+        out.cameraPitch = *reinterpret_cast<const float*>(pitchAddress);
 }
 
 std::string GetUnitName(uint64_t guid, uintptr_t basePtr)

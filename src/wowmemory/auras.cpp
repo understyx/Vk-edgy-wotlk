@@ -2,7 +2,6 @@
 #include "wowmemory/memory_utils.h"
 #include "wowmemory/offsets.h"
 #include <algorithm>
-#include <cstdio>
 
 namespace WoWMemory {
 
@@ -42,22 +41,15 @@ uint32_t ReadAurasForUnit(uintptr_t unitBase, AuraInfo* outAuras, size_t maxAura
 
     uint32_t count = 0;
     if (auraTablePtr && totalAuras > 0) {
-        // Safe debug logging to help validate structure offsets
-        printf("[WoWMemory] Aura count=%d table=%p\n",
-               static_cast<int>(auraCount1),
-               reinterpret_cast<void*>(auraTablePtr));
-
         uint32_t limit = std::min(totalAuras, static_cast<uint32_t>(maxAuras));
         for (uint32_t i = 0; i < limit; ++i) {
             uintptr_t entryAddr = auraTablePtr
                 + static_cast<uintptr_t>(i) * WoWOffsets::auraStructSize
                 + WoWOffsets::auraStructSpellIdOffset;
             if (!IsReadableRange(entryAddr, sizeof(uint32_t))) {
-                printf("[WoWMemory]   [%02u] (unreadable address %p)\n", i, reinterpret_cast<void*>(entryAddr));
                 break;
             }
             uint32_t sid = *reinterpret_cast<const uint32_t*>(entryAddr);
-            printf("[WoWMemory]   [%02u] spell=%u\n", i, sid);
             if (sid == 0) continue;
             outAuras[count++].spellId = sid;
         }

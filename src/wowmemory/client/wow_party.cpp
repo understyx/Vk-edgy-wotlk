@@ -4,9 +4,13 @@
 
 namespace WoWMemory {
 
+namespace {
+constexpr int kPartySlotCount = 4;
+}
+
 int WoWParty::NumPartyMembers() {
     int count = 0;
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < kPartySlotCount; ++i) {
         if (GetPartyMemberGuid(i) != 0) {
             count++;
         }
@@ -24,6 +28,9 @@ uint32_t WoWParty::Difficulty() {
 
 uint64_t WoWParty::GetPartyMemberGuid(int index) {
 #ifdef _WIN32
+    if (index < 0 || index >= kPartySlotCount) {
+        return 0;
+    }
     uint32_t addr = WoWOffsets::Party::PartyArray + index * sizeof(uint64_t);
     return ReadAbs<uint64_t>(addr);
 #else
@@ -33,7 +40,7 @@ uint64_t WoWParty::GetPartyMemberGuid(int index) {
 
 std::vector<uint64_t> WoWParty::GetMembersGuids() {
     std::vector<uint64_t> guids;
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < kPartySlotCount; ++i) {
         uint64_t guid = GetPartyMemberGuid(i);
         if (guid != 0) {
             guids.push_back(guid);

@@ -24,6 +24,9 @@ The following variables are bound from C++ (`WowDataModel`) to RmlUi and updated
 | :--- | :--- | :--- | :--- |
 | `playerName` | `String` | `m_playerName` | The character's name. |
 | `realmName` | `String` | `m_realmName` | The name of the game server/realm. |
+| `localPlayerGUID` | `String` | `m_localPlayerGUID` | The local player's GUID, preformatted as hexadecimal. |
+| `mouseOverGUID` | `String` | `m_mouseOverGUID` | The mouseover GUID, preformatted as hexadecimal. |
+| `hasMouseOverGUID` | `int` (0 or 1) | `m_hasMouseOverGUID` | `1` when a non-zero mouseover GUID is available. |
 | `playerHealth` | `int` | `m_playerHealth` | The current health of the player character. |
 | `playerIsIngame` | `int` (0 or 1) | `m_playerIsIngame` | `1` if the player character is currently logged in and active in the world, `0` otherwise. |
 
@@ -56,6 +59,7 @@ These coordinates represent where the player's corpse is located (useful for cor
 | `corpseX` | `float` | `m_corpseX` | X-coordinate of the player's corpse in the world coordinate system. |
 | `corpseY` | `float` | `m_corpseY` | Y-coordinate of the player's corpse. |
 | `corpseZ` | `float` | `m_corpseZ` | Z-coordinate (altitude) of the player's corpse. |
+| `corpseCoordinates` | `String` | `m_corpseCoordinates` | All three corpse coordinates preformatted to two decimal places. |
 
 ### 5. Party, Raid & Quest Metrics
 

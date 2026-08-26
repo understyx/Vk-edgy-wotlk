@@ -669,10 +669,10 @@ constexpr uint32_t isLoading            = Other::WorldLoading;
 constexpr uint32_t isIndoor             = 0xB4AA94;
 constexpr uint32_t worldLoaded          = Other::WorldLoaded;
 
-constexpr uint32_t localComboPoint         = 0xBD0845;
-constexpr uint32_t localLastTarget         = 0xBD07B0;
+constexpr uint32_t localComboPoint         = LocalPlayer::ComboPoints;
+constexpr uint32_t localLastTarget         = 0xBD07B8;
 constexpr uint32_t localLootWindowOpen     = Container::LootWindowOffset;
-constexpr uint32_t localMouseoverGUID      = 0xBD07B0;
+constexpr uint32_t localMouseoverGUID      = 0xBD07A0;
 constexpr uint32_t localPlayerCharacterState        = 0x6DACA4;
 constexpr uint32_t localPlayerCharacterStateOffset1 = 0xC;
 constexpr uint32_t localPlayerCharacterStateOffset2 = 0x94;
@@ -683,7 +683,7 @@ constexpr uint32_t playerBase              = 0xCD87A8;
 constexpr uint32_t playerHealth            = 0x19B8;
 constexpr uint32_t playerIsIngame          = 0xBD0792;
 constexpr uint32_t playerIsLoadingscreen   = Other::WorldLoading;
-constexpr uint32_t playerName              = Other::RealmName - 0x86; // 0xC79D18
+constexpr uint32_t playerName              = 0x00C79D18; // inline character-name buffer
 
 constexpr uint32_t luaDoString             = 0x819210;
 constexpr uint32_t luaGetLocalizedText     = 0x7225E0;
@@ -764,7 +764,8 @@ constexpr uint32_t unitFieldSummonedBy     = WoWDescriptors::UNIT_FIELD_SUMMONED
 constexpr uint32_t unitFieldBytes0         = WoWDescriptors::UNIT_FIELD_BYTES_0 * 4;
 constexpr uint32_t unitFieldFlags          = WoWDescriptors::UNIT_FIELD_FLAGS * 4;
 constexpr uint32_t unitFieldTargetGUID     = WoWDescriptors::UNIT_FIELD_TARGET * 4;
-constexpr uint32_t unitFieldPowerTypeByteFromDescriptor = 0x47;
+// UNIT_FIELD_BYTES_0 layout: race, class, gender, power type.
+constexpr uint32_t unitFieldPowerTypeByteFromDescriptor = unitFieldBytes0 + 3;
 
 constexpr uint32_t spellCastSpell                  = Spell::CastSpell;
 constexpr uint32_t spellBookStartAddress           = Spell::SpellBook;
@@ -816,9 +817,6 @@ constexpr uint32_t combatLogNodeBlockedOffset     = 0x70;
 constexpr uint32_t combatLogNodeFlagsOffset       = 0x74;
 constexpr uint32_t combatLogNodeSize              = 0x78;
 
-constexpr uint32_t cameraBasePtrOffset     = 0x00C7B5A8;
-constexpr uint32_t cameraOffset1           = 0x6B04;
-constexpr uint32_t cameraOffset2           = Drawing::ActiveCamera; // 0xE8 -> wait, earlier it was 0xE8 but Drawing::ActiveCamera is 0x7E20? Let's keep 0xE8 if that's what flat alias is, wait, let's keep it 0xE8.
 constexpr uint32_t cameraPitchOffset       = 0x34;
 constexpr uint32_t cameraYawOffset         = 0x30;
 

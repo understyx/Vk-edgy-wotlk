@@ -103,6 +103,7 @@ set(VKLAYER_SOURCES
     src/rmlui/OverlayUI.cpp
     src/rmlui/WowDataModel.cpp
     src/wowmemory/memory_utils.cpp
+    src/wowmemory/client_profile.cpp
     src/wowmemory/auras.cpp
     src/wowmemory/unit_info.cpp
     src/wowmemory/combat_log.cpp
@@ -210,6 +211,7 @@ if(MINGW_GXX)
             -I${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/objects
             ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory_dll/wowmemory_dll.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/memory_utils.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/client_profile.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/auras.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/unit_info.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/src/wowmemory/combat_log.cpp

@@ -7,7 +7,9 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <limits>
 
+#include "wowmemory/client_profile.h"
 #include "wowmemory/wowmemory.h"
 
 // Link with Ws2_32.lib
@@ -25,9 +27,35 @@ static void LogMsg(const std::string& msg)
     }
 }
 
+static bool SendExactly(SOCKET socket, const void* data, size_t size)
+{
+    const char* cursor = reinterpret_cast<const char*>(data);
+    size_t remaining = size;
+    while (remaining > 0) {
+        const size_t chunkSize = (remaining > static_cast<size_t>(std::numeric_limits<int>::max()))
+            ? static_cast<size_t>(std::numeric_limits<int>::max())
+            : remaining;
+        const int sent = send(socket, cursor, static_cast<int>(chunkSize), 0);
+        if (sent == SOCKET_ERROR || sent == 0) {
+            return false;
+        }
+        cursor += sent;
+        remaining -= static_cast<size_t>(sent);
+    }
+    return true;
+}
+
 static void SocketClientThread()
 {
     LogMsg("Worker thread started.");
+
+    const WoWMemory::ClientProfileStatus& profile = WoWMemory::GetClientProfileStatus();
+    LogMsg(profile.message);
+    if (!profile.supported) {
+        LogMsg("Memory reading disabled to prevent using absolute offsets with a different client build.");
+        g_Running = false;
+        return;
+    }
 
     // Initialize Winsock
     WSADATA wsaData;
@@ -74,23 +102,25 @@ static void SocketClientThread()
         while (g_Running) {
             WoWMemory::GameData data;
             // Read game memory safely
-            reader.ReadGameData(data);
+            if (!reader.ReadGameData(data)) {
+                LogMsg("Client profile validation failed; stopping the reader.");
+                g_Running = false;
+                break;
+            }
 
             // Serialize data
             WoWMemory::SerializeGameData(data, serializeBuf);
 
             // Send length first (framing)
             uint32_t payloadLen = static_cast<uint32_t>(serializeBuf.size());
-            int bytesSent = send(connectSocket, reinterpret_cast<const char*>(&payloadLen), sizeof(payloadLen), 0);
-            if (bytesSent == SOCKET_ERROR) {
+            if (!SendExactly(connectSocket, &payloadLen, sizeof(payloadLen))) {
                 LogMsg("Send framing length failed. Connection likely closed.");
                 break;
             }
 
             // Send actual serialized data payload
             if (payloadLen > 0) {
-                bytesSent = send(connectSocket, reinterpret_cast<const char*>(serializeBuf.data()), payloadLen, 0);
-                if (bytesSent == SOCKET_ERROR) {
+                if (!SendExactly(connectSocket, serializeBuf.data(), payloadLen)) {
                     LogMsg("Send payload failed. Connection likely closed.");
                     break;
                 }

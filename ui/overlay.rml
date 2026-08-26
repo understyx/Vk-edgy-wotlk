@@ -18,7 +18,7 @@
         </div>
         <div class="stat" data-show="playerIsIngame">
             <span class="label">Player GUID:</span>
-            <span class="value-blue">0x{{localPlayerGUID | format_to_hex}}</span>
+            <span class="value-blue">{{localPlayerGUID}}</span>
         </div>
         <div class="stat">
             <span class="label">In Game:</span>
@@ -50,13 +50,13 @@
         <h2 data-show="corpseX != 0.0">Corpse Location</h2>
         <div class="stat" data-show="corpseX != 0.0">
             <span class="label">Coordinates:</span>
-            <span class="value">X:{{corpseX | round(2)}}, Y:{{corpseY | round(2)}}</span>
+            <span class="value">{{corpseCoordinates}}</span>
         </div>
 
         <h2>Interactions & System</h2>
-        <div class="stat" data-show="mouseOverGUID != 0">
+        <div class="stat" data-show="hasMouseOverGUID">
             <span class="label">Mouseover GUID:</span>
-            <span class="value-blue">0x{{mouseOverGUID | format_to_hex}}</span>
+            <span class="value-blue">{{mouseOverGUID}}</span>
         </div>
         <div class="stat">
             <span class="label">Game State Code:</span>

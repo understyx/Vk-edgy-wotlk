@@ -145,39 +145,53 @@ std::string GetUnitName(uint64_t guid, uintptr_t basePtr)
     // Check if GUID type indicates a Player
     uint16_t high = static_cast<uint16_t>(guid >> 48);
     if (high == 0x0000 || high == 0x0001) {
-        // Player: Lookup in Name Cache (NameStore)
-        uintptr_t nameCache = ReadAbs<uint32_t>(WoWOffsets::nameStore);
-        if (nameCache) {
-            uint32_t mask = ReadAbs<uint32_t>(nameCache + WoWOffsets::nameMask);
-            uintptr_t base = ReadAbs<uint32_t>(nameCache + WoWOffsets::nameBase);
-            if (base) {
-                uint32_t index = static_cast<uint32_t>(guid) & mask;
-                uintptr_t node = ReadAbs<uint32_t>(base + index * 4);
+        // DbNameCache_GetInfoBlockById uses the hash-table subobject in place;
+        // nameStore is not a pointer variable. Each bucket is a 12-byte record
+        // whose +4 field selects the collision-link member in every node.
+        const uintptr_t nameTable = WoWOffsets::nameStore;
+        const uint32_t mask = ReadAbs<uint32_t>(
+            static_cast<uint32_t>(nameTable + WoWOffsets::nameMask), 0xFFFFFFFFu);
+        const uintptr_t buckets = ReadAbs<uint32_t>(
+            static_cast<uint32_t>(nameTable + WoWOffsets::nameBase));
+        if (mask != 0xFFFFFFFFu && buckets) {
+            const uint32_t guidLow = static_cast<uint32_t>(guid);
+            const uintptr_t bucket = buckets
+                + static_cast<uintptr_t>(guidLow & mask) * WoWOffsets::nameBucketStride;
+            const int32_t linkOffset = ReadAbs<int32_t>(
+                static_cast<uint32_t>(bucket + WoWOffsets::nameBucketLinkOffset));
+            uintptr_t node = ReadAbs<uint32_t>(
+                static_cast<uint32_t>(bucket + WoWOffsets::nameBucketHeadOffset));
+
+            // The observed link is +0x0c. Keep a conservative bound because a
+            // damaged cache must never turn this passive lookup into an
+            // arbitrary pointer walk.
+            if (linkOffset > 0 && linkOffset <= 0x400) {
                 size_t count = 0;
-                while (node && (node & 1) == 0 && count < 150) {
-                    uint64_t nodeGuid = ReadAbs<uint64_t>(node);
-                    if (nodeGuid == guid) {
-                        return ReadInlineString(node + WoWOffsets::nameString, 40);
+                while (node && (node & 1u) == 0 && count < 150) {
+                    const uint32_t hashKey = ReadAbs<uint32_t>(
+                        static_cast<uint32_t>(node + WoWOffsets::NameCache::NodeHashKey));
+                    const uint64_t nodeGuid = ReadAbs<uint64_t>(
+                        static_cast<uint32_t>(node + WoWOffsets::nameNodeGuidOffset));
+                    if (hashKey == guidLow && nodeGuid == guid) {
+                        return ReadInlineString(
+                            static_cast<uint32_t>(node + WoWOffsets::nameString), 40);
                     }
-                    node = ReadAbs<uint32_t>(node + WoWOffsets::nameNodeNextOffset);
-                    count++;
+                    node = ReadAbs<uint32_t>(
+                        static_cast<uint32_t>(node + static_cast<uint32_t>(linkOffset)));
+                    ++count;
                 }
             }
         }
     } else {
         // Creature / NPC / Pet: Read from template DB record
         if (basePtr) {
-            uintptr_t pTemplate = ReadAbs<uint32_t>(basePtr + 0x960);
+            uintptr_t pTemplate = ReadAbs<uint32_t>(
+                static_cast<uint32_t>(basePtr + WoWOffsets::UnitName::CreatureTemplate));
             if (pTemplate) {
-                // Try offset 0x18 first
-                uintptr_t pName = ReadAbs<uint32_t>(pTemplate + 0x18);
+                uintptr_t pName = ReadAbs<uint32_t>(
+                    static_cast<uint32_t>(pTemplate + WoWOffsets::UnitName::CreatureTemplateName));
                 if (pName && IsReadableRange(pName, 4)) {
-                    return ReadInlineString(pName, 64);
-                }
-                // Fallback to offset 0x0
-                pName = ReadAbs<uint32_t>(pTemplate + 0x0);
-                if (pName && IsReadableRange(pName, 4)) {
-                    return ReadInlineString(pName, 64);
+                    return ReadInlineString(static_cast<uint32_t>(pName), 64);
                 }
             }
         }

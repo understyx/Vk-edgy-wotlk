@@ -33,7 +33,7 @@ KNOWN_GLOBALS = {
     "party_array": 0x00BD1948,
     "raid_array": 0x00BEB568,
     "raid_count": 0x00BEB608,
-    "legacy_name_store_pointer": 0x00C5D940,
+    "name_cache_hash_table": 0x00C5D940,
     "realm_name": 0x00C79B9E,
     "client_connection": 0x00C79CE0,
     "player_name": 0x00C79D18,

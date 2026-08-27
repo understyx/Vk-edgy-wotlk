@@ -532,6 +532,245 @@ namespace Drawing {
     constexpr uint32_t RenderBackground = 0x2532E0;
 }
 
+// Layouts below were recovered from the build-12340 client with Ghidra.  They
+// describe passive data only; the FrameScript entry points farther below must
+// still be invoked through the game-owned Lua state on the game thread.
+namespace NameCache {
+    constexpr uint32_t Store = 0x00C5D938;
+    constexpr uint32_t HashTable = Store + 0x8;
+    constexpr uint32_t Buckets = 0x1C;
+    constexpr uint32_t Mask = 0x24;
+    constexpr uint32_t BucketStride = 0x0C;
+    constexpr uint32_t BucketNextLinkOffset = 0x04;
+    constexpr uint32_t BucketHead = 0x08;
+    constexpr uint32_t NodeHashKey = 0x00;
+    constexpr uint32_t NodeGuid = 0x18;
+    constexpr uint32_t NodeName = 0x20;
+    constexpr uint32_t NodeAlternateName = 0x54;
+}
+
+namespace UnitName {
+    constexpr uint32_t PetInfo = 0x0D0;
+    constexpr uint32_t PetNumber = 0x114;
+    constexpr uint32_t PetNameRevision = 0x118;
+    constexpr uint32_t CreatureTemplate = 0x964;
+    constexpr uint32_t CreatureTemplateName = 0x5C;
+    constexpr uint32_t DbPetNameCacheGetInfoBlockById = 0x0067EA30;
+}
+
+namespace UnitCast {
+    constexpr uint32_t CastId = 0xA5C;
+    constexpr uint32_t SpellId = 0xA6C;
+    constexpr uint32_t TargetGuid = 0xA70;
+    constexpr uint32_t StartTimeMs = 0xA78;
+    constexpr uint32_t EndTimeMs = 0xA7C;
+    constexpr uint32_t ChannelSpellId = 0xA80;
+    constexpr uint32_t ChannelStartTimeMs = 0xA84;
+    constexpr uint32_t ChannelEndTimeMs = 0xA88;
+}
+
+namespace Aura {
+    constexpr uint32_t InlineTable = 0xC50;
+    constexpr uint32_t HeapCount = 0xC54;
+    constexpr uint32_t HeapTable = 0xC58;
+    constexpr uint32_t InlineCountOrHeapSentinel = 0xDD0;
+    constexpr int32_t HeapSentinel = -1;
+    constexpr uint32_t EntrySize = 0x18;
+    constexpr uint32_t CasterGuid = 0x00;
+    constexpr uint32_t SpellId = 0x08;
+    constexpr uint32_t Flags = 0x0C;
+    constexpr uint32_t StackCount = 0x0E;
+    constexpr uint32_t DurationMs = 0x10;
+    constexpr uint32_t ExpirationTimeMs = 0x14;
+}
+
+namespace Camera {
+    constexpr uint32_t BaseYaw = 0x11C;
+    constexpr uint32_t BasePitch = 0x120;
+    constexpr uint32_t CurrentPitch = 0x230;
+    constexpr uint32_t CurrentYaw = 0x260;
+}
+
+namespace ActionBarState {
+    constexpr uint32_t SlotCount = 144;
+    constexpr uint32_t FirstSlotAction = 0x00C1E358;
+    constexpr uint32_t SlotCountValues = 0x00C1E118;
+    constexpr uint32_t SlotUsable = 0x00C1DED8;
+    constexpr uint32_t SlotNotEnoughResource = 0x00C1DC98;
+}
+
+namespace QuestLogState {
+    constexpr uint32_t Entries = 0x00C237B0;
+    constexpr uint32_t EntryStride = 0x10;
+    constexpr uint32_t EntryQuestId = 0x00;
+    constexpr uint32_t EntryLogSlot = 0x04;
+    constexpr uint32_t EntryIsHeader = 0x08;
+    constexpr uint32_t EntryAuxiliaryState = 0x0C;
+    constexpr uint32_t CachedEntryCount = 0x00C23AD0;
+    constexpr uint32_t SelectedQuestId = 0x00C23AD8;
+    constexpr uint32_t VisibleEntryCount = 0x00C23AE4;
+}
+
+namespace CombatLogState {
+    constexpr uint32_t FirstEntry = 0x00ADB97C;
+    constexpr uint32_t ListSentinel = 0x00ADB978;
+    constexpr uint32_t CurrentEntry = 0x00CA1390;
+    constexpr uint32_t PendingEntry = 0x00CA1394;
+    constexpr uint32_t NodeNext = 0x04;
+    constexpr uint32_t NodeTimestamp = 0x08;
+    constexpr uint32_t NodeEventType = 0x0C;
+    constexpr uint32_t NodeUnresolvedMask = 0x10;
+    constexpr uint32_t NodeSourceGuid = 0x18;
+    constexpr uint32_t NodeSourceName = 0x20;
+    constexpr uint32_t NodeSourceFlags = 0x28;
+    constexpr uint32_t NodeDestinationGuid = 0x30;
+    constexpr uint32_t NodeDestinationName = 0x38;
+    constexpr uint32_t NodeDestinationFlags = 0x40;
+    constexpr uint32_t NodeSpellId = 0x44;
+    constexpr uint32_t NodePayloadFlags = 0x54;
+}
+
+// Query-only stock FrameScript wrappers.  Every function has the client Lua
+// callback shape (lua_State* -> result count).  Addresses are useful for
+// auditing and for a future game-thread bridge; they are not safe raw-memory
+// getters and must not be called from the Vulkan render thread.
+namespace UIQuery {
+namespace ActionBar {
+    constexpr uint32_t GetActionCount = 0x005A7D10;
+    constexpr uint32_t IsUsableAction = 0x005A7E60;
+    constexpr uint32_t GetActionBarPage = 0x005A7FD0;
+    constexpr uint32_t HasAction = 0x005A8220;
+    constexpr uint32_t GetActionInfo = 0x005A8F10;
+    constexpr uint32_t GetActionCooldown = 0x005A91C0;
+    constexpr uint32_t GetActionTexture = 0x005A9B30;
+    constexpr uint32_t IsActionInRange = 0x005A9D50;
+}
+
+namespace SpellBook {
+    constexpr uint32_t GetNumSpellTabs = 0x0053B5C0;
+    constexpr uint32_t GetSpellTabInfo = 0x0053BE70;
+    constexpr uint32_t GetSpellName = 0x005407F0;
+    constexpr uint32_t GetSpellLink = 0x005408E0;
+    constexpr uint32_t GetSpellInfo = 0x00540A30;
+    constexpr uint32_t GetSpellTexture = 0x00540D70;
+    constexpr uint32_t GetSpellCount = 0x00540DF0;
+    constexpr uint32_t GetSpellCooldown = 0x00540E80;
+    constexpr uint32_t IsUsableSpell = 0x00541680;
+    constexpr uint32_t IsSpellInRange = 0x00541C60;
+}
+
+namespace UnitFrame {
+    constexpr uint32_t UnitExists = 0x0060C2A0;
+    constexpr uint32_t UnitGroupRolesAssigned = 0x0060C810;
+    constexpr uint32_t UnitFactionGroup = 0x0060D0A0;
+    constexpr uint32_t UnitReaction = 0x0060D280;
+    constexpr uint32_t UnitGUID = 0x0060E630;
+    constexpr uint32_t UnitName = 0x0060E740;
+    constexpr uint32_t UnitXP = 0x0060EA60;
+    constexpr uint32_t UnitXPMax = 0x0060EAE0;
+    constexpr uint32_t UnitHealth = 0x0060EB60;
+    constexpr uint32_t UnitHealthMax = 0x0060EC60;
+    constexpr uint32_t UnitPower = 0x0060ED40;
+    constexpr uint32_t UnitPowerMax = 0x0060EF40;
+    constexpr uint32_t UnitPowerType = 0x0060F100;
+    constexpr uint32_t UnitLevel = 0x0060F9E0;
+    constexpr uint32_t UnitRace = 0x0060FD40;
+    constexpr uint32_t UnitClass = 0x0060FEC0;
+    constexpr uint32_t UnitClassification = 0x0060D970;
+    constexpr uint32_t UnitCastingInfo = 0x00611DF0;
+    constexpr uint32_t UnitChannelInfo = 0x00612090;
+    constexpr uint32_t UnitInRange = 0x00612F10;
+    constexpr uint32_t UnitThreatSituation = 0x00613A60;
+    constexpr uint32_t UnitDetailedThreatSituation = 0x00613B40;
+    constexpr uint32_t UnitAura = 0x00614D40;
+}
+
+namespace Group {
+    constexpr uint32_t GetReadyCheckTimeLeft = 0x00572C80;
+    constexpr uint32_t GetRaidRosterInfo = 0x00573690;
+    constexpr uint32_t GetReadyCheckStatus = 0x00574180;
+}
+
+namespace QuestLog {
+    constexpr uint32_t GetNumQuestLogEntries = 0x005DF010;
+    constexpr uint32_t GetQuestLogTitle = 0x005E5CC0;
+    constexpr uint32_t GetNumQuestLeaderBoards = 0x005E41A0;
+    constexpr uint32_t GetQuestLogLeaderBoard = 0x005E5F60;
+    constexpr uint32_t GetQuestLogQuestText = 0x005E0340;
+    constexpr uint32_t GetQuestLogCompletionText = 0x005E06D0;
+    constexpr uint32_t GetQuestLogSpecialItemInfo = 0x005E52D0;
+    constexpr uint32_t GetQuestLogSpecialItemCooldown = 0x005E53D0;
+    constexpr uint32_t IsQuestLogSpecialItemInRange = 0x005E54C0;
+}
+
+namespace Inventory {
+    constexpr uint32_t GetContainerNumSlots = 0x005D74A0;
+    constexpr uint32_t GetContainerItemInfo = 0x005D7A90;
+    constexpr uint32_t GetContainerItemLink = 0x005D7C80;
+    constexpr uint32_t GetContainerItemCooldown = 0x005D7D90;
+    constexpr uint32_t GetInventoryItemCooldown = 0x005E7E60;
+    constexpr uint32_t GetInventoryItemTexture = 0x005E9BC0;
+    constexpr uint32_t GetInventoryItemCount = 0x005E9E40;
+    constexpr uint32_t GetInventoryItemDurability = 0x005EA170;
+    constexpr uint32_t GetInventoryItemLink = 0x005EA270;
+    constexpr uint32_t GetInventoryItemId = 0x005EA3E0;
+    constexpr uint32_t GetItemInfo = 0x00516C60;
+    constexpr uint32_t GetItemIcon = 0x00517020;
+    constexpr uint32_t GetItemCount = 0x0051C2E0;
+    constexpr uint32_t GetItemCooldown = 0x00510FC0;
+    constexpr uint32_t IsItemInRange = 0x0051C9C0;
+}
+
+namespace Windows {
+    constexpr uint32_t GetNumLootItems = 0x00588540;
+    constexpr uint32_t GetLootSlotInfo = 0x00588570;
+    constexpr uint32_t GetLootSlotLink = 0x005886D0;
+    constexpr uint32_t GetMerchantNumItems = 0x005841D0;
+    constexpr uint32_t GetMerchantItemInfo = 0x00584E10;
+    constexpr uint32_t GetInboxNumItems = 0x0056D6D0;
+    constexpr uint32_t GetInboxHeaderInfo = 0x0056E520;
+    constexpr uint32_t GetInboxItem = 0x00570F10;
+    constexpr uint32_t GetTradePlayerItemInfo = 0x00587EB0;
+    constexpr uint32_t GetTradeTargetItemInfo = 0x00587C60;
+    constexpr uint32_t GetNumAuctionItems = 0x0059C1A0;
+    constexpr uint32_t GetAuctionItemInfo = 0x0059D5E0;
+    constexpr uint32_t GetAuctionItemLink = 0x0059C2D0;
+}
+
+namespace Character {
+    constexpr uint32_t GetNumFriends = 0x006B4060;
+    constexpr uint32_t GetFriendInfo = 0x006B4130;
+    constexpr uint32_t GetNumGuildMembers = 0x005CA130;
+    constexpr uint32_t GetGuildRosterInfo = 0x005CC9C0;
+    constexpr uint32_t GetNumTalentTabs = 0x005C5CC0;
+    constexpr uint32_t GetNumTalents = 0x005C5D40;
+    constexpr uint32_t GetTalentInfo = 0x005C7800;
+    constexpr uint32_t GetNumGlyphSockets = 0x005B71E0;
+    constexpr uint32_t GetGlyphSocketInfo = 0x005B7260;
+    constexpr uint32_t GetCategoryList = 0x005B1390;
+    constexpr uint32_t GetAchievementInfo = 0x005B3FC0;
+    constexpr uint32_t GetAchievementCriteriaInfo = 0x005B58B0;
+    constexpr uint32_t GetNumFactions = 0x005CFF20;
+    constexpr uint32_t GetFactionInfo = 0x005D1150;
+    constexpr uint32_t GetCurrencyListSize = 0x005AFD10;
+    constexpr uint32_t GetCurrencyListInfo = 0x005B0680;
+    constexpr uint32_t GetMoney = 0x0060FBA0;
+}
+
+namespace Chat {
+    constexpr uint32_t GetChatWindowInfo = 0x004FBD90;
+    constexpr uint32_t GetChatWindowMessages = 0x004FC0C0;
+    constexpr uint32_t GetCursorInfo = 0x00515200;
+    constexpr uint32_t GetMouseFocus = 0x00516BF0;
+}
+} // namespace UIQuery
+
+// Supporting client internals with native C++ signatures, not Lua callbacks.
+namespace UIInternal {
+    constexpr uint32_t FrameScriptGetText = 0x00819D40;
+    constexpr uint32_t SimpleUICreateTooltip = 0x00621070;
+}
+
 namespace Other {
     constexpr uint32_t PerformanceCounter = 0x0086AE20;
     constexpr uint32_t LastHardwareAction = 0x00B499A4;
@@ -710,11 +949,17 @@ constexpr uint32_t luaSetField             = 0x0084E900;
 constexpr uint32_t luaRawGetHelper         = 0x00854510;
 constexpr uint32_t luaGetGlobalStringVar   = 0x00818010;
 
-constexpr uint32_t nameBase                = 0x1C;
-constexpr uint32_t nameMask                = 0x24;
-constexpr uint32_t nameStore               = 0xC5D938 + 0x8;
-constexpr uint32_t nameString              = 0x20;
-constexpr uint32_t nameNodeNextOffset      = 0xC;
+constexpr uint32_t nameBase                = NameCache::Buckets;
+constexpr uint32_t nameMask                = NameCache::Mask;
+constexpr uint32_t nameStore               = NameCache::HashTable;
+constexpr uint32_t nameString              = NameCache::NodeName;
+constexpr uint32_t nameBucketStride        = NameCache::BucketStride;
+constexpr uint32_t nameBucketHeadOffset    = NameCache::BucketHead;
+constexpr uint32_t nameBucketLinkOffset    = NameCache::BucketNextLinkOffset;
+constexpr uint32_t nameNodeGuidOffset      = NameCache::NodeGuid;
+// Compatibility export only. The real link-member offset is stored in each
+// bucket at nameBucketLinkOffset and must be read dynamically.
+constexpr uint32_t nameNodeNextOffset      = 0x0C;
 
 constexpr uint32_t partyLeader             = 0xBD1968;
 constexpr uint32_t partyPlayer1            = Party::PartyArray;
@@ -782,20 +1027,20 @@ constexpr uint32_t mouseOverGUID                   = 0x00BD07A0;
 constexpr uint32_t comboPoints                     = LocalPlayer::ComboPoints;
 constexpr uint32_t lastHardwareActionTimestamp     = Other::LastHardwareAction;
 
-constexpr uint32_t objectCastingSpellId    = 0xA6C;
-constexpr uint32_t objectChannelSpellId    = 0xA80;
+constexpr uint32_t objectCastingSpellId    = UnitCast::SpellId;
+constexpr uint32_t objectChannelSpellId    = UnitCast::ChannelSpellId;
 constexpr uint32_t unitCastingIdOffset     = Unit::CastingId;
 constexpr uint32_t unitChannelIdOffset     = Unit::ChanneledCastingId;
 
-constexpr uint32_t auraCount1Offset        = 0xDD0;
-constexpr uint32_t auraCount2Offset        = 0xC54;
-constexpr uint32_t auraTable1Offset        = 0xC50;
-constexpr uint32_t auraTable2Offset        = 0xC58;
-constexpr uint32_t auraStructSize          = 0x18;
-constexpr uint32_t auraStructSpellIdOffset = 0x8;
+constexpr uint32_t auraCount1Offset        = Aura::InlineCountOrHeapSentinel;
+constexpr uint32_t auraCount2Offset        = Aura::HeapCount;
+constexpr uint32_t auraTable1Offset        = Aura::InlineTable;
+constexpr uint32_t auraTable2Offset        = Aura::HeapTable;
+constexpr uint32_t auraStructSize          = Aura::EntrySize;
+constexpr uint32_t auraStructSpellIdOffset = Aura::SpellId;
 
 constexpr uint32_t combatLogListManager        = 0xADB974;
-constexpr uint32_t combatLogListHeadOffset     = 0x0;
+constexpr uint32_t combatLogListHeadOffset     = 0x8; // 0x00ADB97C
 constexpr uint32_t combatLogListTailOffset     = 0x4;
 constexpr uint32_t combatLogEventPrevOffset    = 0x0;
 constexpr uint32_t combatLogEventNextOffset    = 0x4;
@@ -817,8 +1062,8 @@ constexpr uint32_t combatLogNodeBlockedOffset     = 0x70;
 constexpr uint32_t combatLogNodeFlagsOffset       = 0x74;
 constexpr uint32_t combatLogNodeSize              = 0x78;
 
-constexpr uint32_t cameraPitchOffset       = 0x34;
-constexpr uint32_t cameraYawOffset         = 0x30;
+constexpr uint32_t cameraPitchOffset       = Camera::BasePitch;
+constexpr uint32_t cameraYawOffset         = Camera::BaseYaw;
 
 } // namespace WoWOffsets
 
